@@ -1,12 +1,18 @@
+import argparse
 from pyspark.sql import SparkSession
 import pyspark.sql.functions as F
 
-# Initialize a Spark session
+parser = argparse.ArgumentParser(description='Most popular listings parameters')
+parser.add_argument('--listings', help='Path to the listings dataset')
+parser.add_argument('--reviews', help='Path to the reviews dataset')
+parser.add_argument('--output', help='Directory to save the output')
+args = parser.parse_args()
+
 spark = SparkSession.builder \
     .appName("Most popular listings") \
     .getOrCreate()
 
-listings = spark.read.csv("data/listings.csv.gz",
+listings = spark.read.csv(args.listings,
     header=True,
     inferSchema=True,
     sep=",",
@@ -16,7 +22,7 @@ listings = spark.read.csv("data/listings.csv.gz",
     mode="PERMISSIVE"
 )
 
-reviews = spark.read.csv("data/reviews.csv.gz",
+reviews = spark.read.csv(args.reviews,
     header=True,
     inferSchema=True,
     sep=",",
@@ -39,4 +45,4 @@ reviews_per_listing = listings_reviews \
 
 reviews_per_listing \
   .write \
-  .csv('data/output')
+  .csv(args.output)
