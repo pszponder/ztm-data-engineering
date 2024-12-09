@@ -1,38 +1,132 @@
-version: '2.1'
+# version: '2.1'
 
+# services:
+#   zoo1:
+#     image: confluentinc/cp-zookeeper:7.3.2
+#     hostname: zoo1
+#     container_name: zoo1
+#     ports:
+#       - "2181:2181"
+#     environment:
+#       ZOOKEEPER_CLIENT_PORT: 2181
+#       ZOOKEEPER_SERVER_ID: 1
+#       ZOOKEEPER_SERVERS: zoo1:2888:3888
+
+#   kafka1:
+#     image: confluentinc/cp-kafka:7.3.2
+#     hostname: kafka1
+#     container_name: kafka1
+#     ports:
+#       - "9092:9092"
+#       - "29092:29092"
+#       - "9999:9999"
+#     environment:
+#       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+#       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+#       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+#       KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+#       KAFKA_BROKER_ID: 1
+#       KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+#       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+#       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+#       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+#       KAFKA_JMX_PORT: 9999
+#       KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
+#       KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+#       KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+#     depends_on:
+#       - zoo1
+version: '3.8'
 services:
-  zoo1:
-    image: confluentinc/cp-zookeeper:7.3.2
-    hostname: zoo1
-    container_name: zoo1
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.1
+    hostname: zookeeper
+    container_name: zookeeper
     ports:
       - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_SERVER_ID: 1
-      ZOOKEEPER_SERVERS: zoo1:2888:3888
+      ZOOKEEPER_TICK_TIME: 2000
 
-  kafka1:
-    image: confluentinc/cp-kafka:7.3.2
-    hostname: kafka1
-    container_name: kafka1
+  kafka:
+    image: confluentinc/cp-kafka:7.4.1
+    hostname: kafka
+    container_name: kafka
+    depends_on:
+      - zookeeper
     ports:
       - "9092:9092"
-      - "29092:29092"
-      - "9999:9999"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
       KAFKA_BROKER_ID: 1
-      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    #   KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+    #   KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      # Listen on all interfaces internally
+    #   KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      # Advertise the Kafka listener as `kafka` for other containers and `localhost` for your host.
+      # Use the container hostname for internal resolution and the host's localhost for external clients.
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+    #   KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_JMX_PORT: 9999
-      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
-      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
-      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
+
+  mongodb:
+    image: mongo:6.0
+    container_name: mongodb
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+
+  kafka-connect:
+    image: confluentinc/cp-kafka-connect:7.4.1
+    hostname: kafka-connect
+    container_name: kafka-connect
     depends_on:
-      - zoo1
+      - kafka
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: kafka:19092
+      CONNECT_REST_PORT: 8083
+      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+      CONNECT_GROUP_ID: "kafka-connect-group"
+      CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
+      CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
+      CONNECT_STATUS_STORAGE_TOPIC: _connect-status
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      CONNECT_PLUGIN_PATH: "/usr/share/java"
+      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+    volumes:
+      - ./plugins:/usr/share/java/mongo-plugin
+    command:
+      - bash
+      - -c
+      - |
+        # Wait for Kafka to be ready before starting Kafka Connect
+        while ! nc -z kafka 9092; do sleep 1; done
+        echo Classpath $CLASSPATH
+        /etc/confluent/docker/run
+
+  mongo-express:
+    image: mongo-express:1.0.0
+    container_name: mongo-express
+    depends_on:
+      - mongodb
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+      ME_CONFIG_MONGODB_SERVER: mongodb

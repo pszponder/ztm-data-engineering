@@ -1,0 +1,13 @@
+{
+    "name": "mongo-source-connector",
+    "config": {
+      "connector.class": "com.mongodb.kafka.connect.MongoSourceConnector",
+      "tasks.max": "1",
+      "connection.uri": "mongodb://admin:password@mongodb:27017",
+      "database": "testdb",
+      "collection": "testcollection",
+      "topics": "mongo-test-topic",
+      "output.format.value": "json",
+      "output.schema.infer.value": "true"
+    }
+  }
