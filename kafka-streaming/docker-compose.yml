@@ -70,63 +70,132 @@ services:
     #   KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
 
-  mongodb:
-    image: mongo:6.0
-    container_name: mongodb
-    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
-    ports:
-      - "27017:27017"
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+#   mongodb:
+#     image: mongo:6.0
+#     container_name: mongodb
+#     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+#     ports:
+#       - "27017:27017"
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: admin
+#       MONGO_INITDB_ROOT_PASSWORD: password
+
+#   kafka-connect:
+#     image: confluentinc/cp-kafka-connect:7.4.1
+#     hostname: kafka-connect
+#     container_name: kafka-connect
+#     depends_on:
+#       - kafka
+#     ports:
+#       - "8083:8083"
+#     environment:
+#       CONNECT_BOOTSTRAP_SERVERS: kafka:19092
+#       CONNECT_REST_PORT: 8083
+#       CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
+#       CONNECT_GROUP_ID: "kafka-connect-group"
+#       CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
+#       CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
+#       CONNECT_STATUS_STORAGE_TOPIC: _connect-status
+#       CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+#       CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+#       CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+#       CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+#       CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+#       CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+#       CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+#       CONNECT_PLUGIN_PATH: "/usr/share/java/postgres-plugin"
+#       CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
+#     volumes:
+#       - ./plugins:/usr/share/java/postgres-plugin
+#     command:
+#       - bash
+#       - -c
+#       - |
+#         # Wait for Kafka to be ready before starting Kafka Connect
+#         while ! nc -z kafka 9092; do sleep 1; done
+#         echo Classpath $CLASSPATH
+#         /etc/confluent/docker/run
+
 
   kafka-connect:
-    image: confluentinc/cp-kafka-connect:7.4.1
-    hostname: kafka-connect
+    image: debezium/connect:3.0.0.Final
     container_name: kafka-connect
     depends_on:
       - kafka
     ports:
       - "8083:8083"
     environment:
-      CONNECT_BOOTSTRAP_SERVERS: kafka:19092
-      CONNECT_REST_PORT: 8083
-      CONNECT_REST_ADVERTISED_HOST_NAME: kafka-connect
-      CONNECT_GROUP_ID: "kafka-connect-group"
+      BOOTSTRAP_SERVERS: kafka:19092
+      GROUP_ID: "kafka-connect-group"
       CONNECT_CONFIG_STORAGE_TOPIC: _connect-configs
       CONNECT_OFFSET_STORAGE_TOPIC: _connect-offsets
       CONNECT_STATUS_STORAGE_TOPIC: _connect-status
-      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
-      CONNECT_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_INTERNAL_KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_INTERNAL_VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
-      CONNECT_PLUGIN_PATH: "/usr/share/java"
-      CONNECT_LOG4J_ROOT_LOGLEVEL: "INFO"
-    volumes:
-      - ./plugins:/usr/share/java/mongo-plugin
-    command:
-      - bash
-      - -c
-      - |
-        # Wait for Kafka to be ready before starting Kafka Connect
-        while ! nc -z kafka 9092; do sleep 1; done
-        echo Classpath $CLASSPATH
-        /etc/confluent/docker/run
+      CONFIG_STORAGE_TOPIC: _connect-configs
+      OFFSET_STORAGE_TOPIC: _connect-offsets
+      STATUS_STORAGE_TOPIC: _connect-status
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      PLUGIN_PATH: /kafka/connect
 
-  mongo-express:
-    image: mongo-express:1.0.0
-    container_name: mongo-express
-    depends_on:
-      - mongodb
-    ports:
-      - "8081:8081"
+  postgres:
+    image: postgres:15
+    container_name: postgres
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: password
-      ME_CONFIG_MONGODB_SERVER: mongodb
+        POSTGRES_USER: kafka_connect_user
+        POSTGRES_PASSWORD: kafka_connect_password
+        POSTGRES_DB: exampledb
+    command:
+        - "postgres"
+        - "-c"
+        - "wal_level=logical"
+        - "-c"
+        - "max_replication_slots=10"
+        - "-c"
+        - "max_wal_senders=10"
+    ports:
+        - "5432:5432"
+#   postgres:
+#     image: postgres:15
+#     container_name: postgres
+#     environment:
+#       POSTGRES_USER: kafka_connect_user
+#       POSTGRES_PASSWORD: kafka_connect_password
+#       POSTGRES_DB: exampledb
+#     ports:
+#       - "5432:5432"
+
+# postgres:
+#   image: postgres:15
+#   container_name: postgres
+#   environment:
+#     POSTGRES_USER: kafka_connect_user
+#     POSTGRES_PASSWORD: kafka_connect_password
+#     POSTGRES_DB: exampledb
+#   command:
+#     - "postgres"
+#     - "-c"
+#     - "wal_level=logical"
+#     - "-c"
+#     - "max_replication_slots=10"
+#     - "-c"
+#     - "max_wal_senders=10"
+#   ports:
+#     - "5432:5432"
+
+#   mongo-express:
+#     image: mongo-express:1.0.0
+#     container_name: mongo-express
+#     depends_on:
+#       - mongodb
+#     ports:
+#       - "8081:8081"
+#     environment:
+#       ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+#       ME_CONFIG_MONGODB_ADMINPASSWORD: password
+#       ME_CONFIG_BASICAUTH_USERNAME: admin
+#       ME_CONFIG_BASICAUTH_PASSWORD: password
+#       ME_CONFIG_MONGODB_SERVER: mongodb
