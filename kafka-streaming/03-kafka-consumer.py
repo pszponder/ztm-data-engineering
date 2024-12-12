@@ -1,12 +1,14 @@
 import argparse
 import json
+
 from confluent_kafka import Consumer, KafkaError
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Test Kafka consumer')
-    parser.add_argument('--group-id', '-g', help='Consumer group ID')
-    parser.add_argument('--topic-name', '-t', help='Topic name ')
-    parser.add_argument('--name', '-n', help='Name of this consumer')
+    parser = argparse.ArgumentParser(description="Test Kafka consumer")
+    parser.add_argument("--group-id", "-g", help="Consumer group ID")
+    parser.add_argument("--topic-name", "-t", help="Topic name ")
+    parser.add_argument("--name", "-n", help="Name of this consumer")
 
     args = parser.parse_args()
 
@@ -15,9 +17,10 @@ def main():
     consumer_name = args.name
 
     config = {
-        'bootstrap.servers': 'localhost:9092',
-        'group.id': group_id,
-        'auto.offset.reset': 'earliest'
+        "bootstrap.servers": "localhost:9092",
+        "group.id": group_id,
+        "auto.offset.reset": "earliest",
+        
     }
 
     consumer = Consumer(config)
@@ -36,7 +39,7 @@ def main():
                     # End of partition
                     continue
                 else:
-                    # Error while reading 
+                    # Error while reading
                     print(f"[{consumer_name}]Error encountered: {msg.error()}")
                     continue
 
@@ -51,13 +54,16 @@ def main():
 def process_message(consumer_name, msg):
     value = msg.value()
     try:
-        order = json.loads(value.decode('utf-8'))
-        price = order.get('total_price', 0)
+        order = json.loads(value.decode("utf-8"))
+        price = order.get("total_price", 0)
         if price > 250:
-            print(f"[{consumer_name}] [partition={msg.partition()}] " +  
-            f"Received order price={price}")
+            print(
+                f"[{consumer_name}] [partition={msg.partition()}] "
+                + f"Received order price={price}"
+            )
     except json.JSONDecodeError as e:
         print(f"[{consumer_name}] Failed to decode JSON: {e}")
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

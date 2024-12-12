@@ -1,20 +1,21 @@
 import base64
-from decimal import Decimal
 import json
-from confluent_kafka import Consumer, KafkaException, KafkaError
+from decimal import Decimal
 
+from confluent_kafka import Consumer, KafkaError, KafkaException
 
 # Kafka configuration
 conf = {
-    'bootstrap.servers': 'localhost:9092',
-    'group.id': 'postgres-price-consumer',
-    'auto.offset.reset': 'earliest', 
+    "bootstrap.servers": "localhost:9092",
+    "group.id": "postgres-price-consumer",
+    "auto.offset.reset": "earliest",
 }
+
 
 def main():
     consumer = Consumer(conf)
 
-    topic = 'postgres-.public.orders'
+    topic = "postgres-.public.orders"
     consumer.subscribe([topic])
 
     try:
@@ -23,7 +24,7 @@ def main():
             msg = consumer.poll(1.0)
 
             if msg is None:
-                continue 
+                continue
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
                     print(f"End of partition reached {msg.topic()} [{msg.partition()}]")
@@ -39,24 +40,26 @@ def main():
         print("Closing consumer...")
         consumer.close()
 
+
 def process_message(msg):
     value = msg.value()
     try:
-        order = json.loads(value.decode('utf-8'))
-        total_amount_bytes = order.get('payload', {}).get('after', {}).get('total_amount')
+        order = json.loads(value.decode("utf-8"))
+        total_amount_bytes = (
+            order.get("payload", {}).get("after", {}).get("total_amount")
+        )
         total_amount = decode_decimal(total_amount_bytes)
         print(f"Received order with total amount={total_amount}")
     except json.JSONDecodeError as e:
-        print(f"[{consumer_name}] Failed to decode JSON: {e}")
+        print(f"Failed to decode JSON: {e}")
+
 
 def decode_decimal(encoded_string, scale=2):
     """Decode a base64-encoded Kafka Connect Decimal to a Python Decimal."""
-    # Decode the base64 string to bytes
     value_bytes = base64.b64decode(encoded_string)
-    # Convert the bytes to an integer (big-endian, signed)
     unscaled_value = int.from_bytes(value_bytes, byteorder="big", signed=True)
-    # Adjust for the scale
-    return Decimal(unscaled_value) / Decimal(10 ** scale)
+    return Decimal(unscaled_value) / Decimal(10**scale)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
