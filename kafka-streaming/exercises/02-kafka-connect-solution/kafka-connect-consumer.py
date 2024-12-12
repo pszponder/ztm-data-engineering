@@ -4,11 +4,10 @@ import json
 from confluent_kafka import Consumer, KafkaException, KafkaError
 
 
-# Kafka configuration
 conf = {
     'bootstrap.servers': 'localhost:9092',
-    'group.id': 'postgres-price-consumer',
-    'auto.offset.reset': 'earliest', 
+    'group.id': 'postgres-price-consumer', 
+    'auto.offset.reset': 'earliest',  
 }
 
 def main():
@@ -43,20 +42,21 @@ def process_message(msg):
     value = msg.value()
     try:
         order = json.loads(value.decode('utf-8'))
-        total_amount_bytes = order.get('payload', {}).get('after', {}).get('total_amount')
-        total_amount = decode_decimal(total_amount_bytes)
-        print(f"Received order with total amount={total_amount}")
-    except json.JSONDecodeError as e:
-        print(f"[{consumer_name}] Failed to decode JSON: {e}")
+        payload = order.get('payload', {})
 
-def decode_decimal(encoded_string, scale=2):
-    """Decode a base64-encoded Kafka Connect Decimal to a Python Decimal."""
-    # Decode the base64 string to bytes
-    value_bytes = base64.b64decode(encoded_string)
-    # Convert the bytes to an integer (big-endian, signed)
-    unscaled_value = int.from_bytes(value_bytes, byteorder="big", signed=True)
-    # Adjust for the scale
-    return Decimal(unscaled_value) / Decimal(10 ** scale)
+        before = payload.get('before', None)
+        after = payload.get('after', None)
+
+        if not before or not after:
+            return
+
+        before_status = before.get('status')
+        after_status = after.get('status')
+
+        if before_status == "processed" and after_status == "refunded":
+            print(f"Status changed from 'processed' to 'refunded' for order: {order.get('payload', {}).get('after', {}).get('id')}")
+    except json.JSONDecodeError as e:
+        print(f"Failed to decode JSON: {e}")
 
 if __name__ == '__main__':
     main()
