@@ -30,17 +30,10 @@ def main():
                     print(f"Error: {msg.error()}", file=sys.stderr)
                     continue
 
-            message_value = msg.value().decode("utf-8")
-
-            event = json.loads(message_value)
-
-            bot = event.get("bot", False)
-            minor = event.get("minor", True)
-            title = event.get("title", "Unknown")
-            user = event.get("user", "Unknown")
-
-            if bot and not minor:
-                print(f"Major bot edit detected**: User '{user}' edited '{title}'")
+            # TODO: Print a message if two conditions are true:
+            # * If a change was made by a bot
+            # * If a the change is not minor
+            
 
     except KeyboardInterrupt:
         print("Consumption interrupted by user.")

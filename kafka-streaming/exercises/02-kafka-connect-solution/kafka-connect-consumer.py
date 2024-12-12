@@ -30,9 +30,6 @@ def main():
             else:
                 process_message(msg)
 
-    except KeyboardInterrupt:
-        print("Consumer interrupted by user.")
-
     finally:
         print("Closing consumer...")
         consumer.close()
@@ -40,25 +37,22 @@ def main():
 
 def process_message(msg):
     value = msg.value()
-    try:
-        order = json.loads(value.decode("utf-8"))
-        payload = order.get("payload", {})
+    order = json.loads(value.decode("utf-8"))
+    payload = order.get("payload", {})
 
-        before = payload.get("before", None)
-        after = payload.get("after", None)
+    before = payload.get("before", None)
+    after = payload.get("after", None)
 
-        if not before or not after:
-            return
+    if not before or not after:
+        return
 
-        before_status = before.get("status")
-        after_status = after.get("status")
+    before_status = before.get("status")
+    after_status = after.get("status")
 
-        if before_status == "processed" and after_status == "refunded":
-            print(
-                f"Status changed from 'processed' to 'refunded' for order: {order.get('payload', {}).get('after', {}).get('id')}"
-            )
-    except json.JSONDecodeError as e:
-        print(f"Failed to decode JSON: {e}")
+    if before_status == "processed" and after_status == "refunded":
+        print(
+            f"Status changed from 'processed' to 'refunded' for order: {order.get('payload', {}).get('after', {}).get('id')}"
+    )
 
 
 if __name__ == "__main__":

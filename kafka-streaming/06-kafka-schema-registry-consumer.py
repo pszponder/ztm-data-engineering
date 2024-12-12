@@ -24,13 +24,11 @@ def main():
     parser = argparse.ArgumentParser(description="Test Kafka consumer")
     parser.add_argument("--group-id", "-g", help="Consumer group ID")
     parser.add_argument("--topic-name", "-t", help="Topic name ")
-    parser.add_argument("--name", "-n", help="Name of this consumer")
 
     args = parser.parse_args()
 
     group_id = args.group_id
     topic_name = args.topic_name
-    consumer_name = args.name
 
     schema_registry_conf = {"url": "http://localhost:8081"}
     schema_registry_client = SchemaRegistryClient(schema_registry_conf)
@@ -50,7 +48,7 @@ def main():
     consumer = Consumer(config)
     consumer.subscribe([topic_name])
 
-    print(f"[{consumer_name}] Starting consumer with group ID '{group_id}'")
+    print(f"Starting consumer with group ID '{group_id}'")
 
     try:
         while True:
@@ -60,35 +58,28 @@ def main():
                 continue
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
-                    # End of partition
+                    # End of a Kafka partition
                     continue
                 else:
                     # Error while reading
-                    print(f"[{consumer_name}]Error encountered: {msg.error()}")
+                    print(f"Error encountered: {msg.error()}")
                     continue
 
-            process_message(consumer_name, avro_deserializer, msg)
+            process_message(avro_deserializer, msg)
 
-    except KeyboardInterrupt:
-        print("[{consumer_name}]Stopping consumer...")
     finally:
         consumer.close()
 
 
-def process_message(consumer_name, avro_deserializer, msg):
-    value = msg.value()
-    try:
-        order = avro_deserializer(
-            msg.value(), SerializationContext(msg.topic(), MessageField.VALUE)
-        )
-        price = order.get("total_price", 0)
-        if price > 250:
-            print(
-                f"[{consumer_name}] [partition={msg.partition()}] "
-                + f"Received order price={price}"
-            )
-    except json.JSONDecodeError as e:
-        print(f"[{consumer_name}] Failed to decode JSON: {e}")
+def process_message(avro_deserializer, msg):
+    order = avro_deserializer(
+        msg.value(), SerializationContext(msg.topic(), MessageField.VALUE)
+    )
+    price = order.get("total_price", 0)
+    if price < 250:
+        return
+
+    print(f"Received order price={price}")
 
 
 if __name__ == "__main__":

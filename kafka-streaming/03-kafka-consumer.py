@@ -16,14 +16,13 @@ def main():
     topic_name = args.topic_name
     consumer_name = args.name
 
-    config = {
+    consumer_config = {
         "bootstrap.servers": "localhost:9092",
         "group.id": group_id,
         "auto.offset.reset": "earliest",
-        
     }
 
-    consumer = Consumer(config)
+    consumer = Consumer(consumer_config)
     consumer.subscribe([topic_name])
 
     print(f"[{consumer_name}] Starting consumer with group ID '{group_id}'")
@@ -36,33 +35,30 @@ def main():
                 continue
             if msg.error():
                 if msg.error().code() == KafkaError._PARTITION_EOF:
-                    # End of partition
+                    # End of a Kafka partition
                     continue
                 else:
-                    # Error while reading
+                    # Error while reading messages
                     print(f"[{consumer_name}]Error encountered: {msg.error()}")
                     continue
 
             process_message(consumer_name, msg)
 
-    except KeyboardInterrupt:
-        print("[{consumer_name}]Stopping consumer...")
     finally:
         consumer.close()
 
 
 def process_message(consumer_name, msg):
     value = msg.value()
-    try:
-        order = json.loads(value.decode("utf-8"))
-        price = order.get("total_price", 0)
-        if price > 250:
-            print(
-                f"[{consumer_name}] [partition={msg.partition()}] "
-                + f"Received order price={price}"
-            )
-    except json.JSONDecodeError as e:
-        print(f"[{consumer_name}] Failed to decode JSON: {e}")
+
+    order = json.loads(value.decode("utf-8"))
+    price = order.get("total_price", 0)
+    if price < 250:
+        return
+
+    print(
+        f"[{consumer_name}] [partition={msg.partition()}] Received order price={price}"
+    )
 
 
 if __name__ == "__main__":

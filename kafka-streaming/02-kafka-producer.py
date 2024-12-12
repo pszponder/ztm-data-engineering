@@ -30,9 +30,12 @@ def generate_order():
 
 
 def main():
-    config = {"bootstrap.servers": "localhost:9092", "acks": "all"}
+    producer_config = {
+        "bootstrap.servers": "localhost:9092",
+        "acks": "all"
+    }
 
-    producer = Producer(config)
+    producer = Producer(producer_config)
 
     topic = "orders"
 
@@ -41,11 +44,12 @@ def main():
             print("ERROR: Message failed delivery: {}".format(err))
         else:
             print(
-                textwrap.dedent(f"""
-            Produced event to topic {msg.topic()}:
-            key = {msg.key().decode('utf-8')}
-            value = {msg.value().decode('utf-8')}
-            """)
+                textwrap.dedent(
+                f"""
+                    Produced event to topic {msg.topic()}:
+                    key = {msg.key().decode('utf-8')}
+                    value = {msg.value().decode('utf-8')}
+                """)
             )
 
     while True:

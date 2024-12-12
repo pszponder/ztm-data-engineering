@@ -1,10 +1,8 @@
-import base64
 import json
-from decimal import Decimal
 
 from confluent_kafka import Consumer, KafkaError, KafkaException
 
-consumer_config = {
+conf = {
     "bootstrap.servers": "localhost:9092",
     "group.id": "postgres-price-consumer",
     "auto.offset.reset": "earliest",
@@ -12,7 +10,7 @@ consumer_config = {
 
 
 def main():
-    consumer = Consumer(consumer_config)
+    consumer = Consumer(conf)
 
     topic = "postgres-.public.orders"
     consumer.subscribe([topic])
@@ -38,21 +36,11 @@ def main():
 
 
 def process_message(msg):
-    value = msg.value()
-
-    order = json.loads(value.decode("utf-8"))
-    total_amount_bytes = (
-        order.get("payload", {}).get("after", {}).get("total_amount")
-    )
-    total_amount = decode_decimal(total_amount_bytes)
-    print(f"Received order with total amount={total_amount}")
-
-
-def decode_decimal(encoded_string, scale=2):
-    value_bytes = base64.b64decode(encoded_string)
-    unscaled_value = int.from_bytes(value_bytes, byteorder="big", signed=True)
-    return Decimal(unscaled_value) / Decimal(10**scale)
-
+    # TODO: Process incoming WAL record
+    # Print a string message if two conditions are true:
+    # * If a message is for an update operation
+    # * If an order status has changed from "processed" to "refunded"
+    pass
 
 if __name__ == "__main__":
     main()
