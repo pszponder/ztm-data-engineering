@@ -1,9 +1,6 @@
 import json
-import os
-import sys
 import textwrap
 
-import requests
 from confluent_kafka import Producer
 from sseclient import SSEClient
 
@@ -43,7 +40,26 @@ def main():
 
             print(data)
 
-            # TODO: Produce a Kafka messages from a Wikistream update message
+            id = data.get("id")
+            message = {
+                "id": id,
+                "type": data.get("type"),
+                "title": data.get("title"),
+                "user": data.get("user"),
+                "bot": data.get("bot"),
+                "timestamp": data.get("timestamp"),
+                "comment": data.get("comment"),
+                "minor": data.get("minor", False),
+            }
+
+            value_bytes = json.dumps(message).encode("utf-8")
+            producer.produce(
+                topic=kafka_topic,
+                key=str(id).encode("utf-8"),
+                value=value_bytes,
+                callback=delivery_report,
+            )
+            producer.poll(0)
 
     producer.flush()
 

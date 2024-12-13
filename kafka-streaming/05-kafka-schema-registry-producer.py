@@ -76,7 +76,6 @@ def main():
                 f"""
                     Produced event to topic {msg.topic()}:
                     key = {msg.key().decode('utf-8')}
-                    value = {msg.value().decode('utf-8')}
                 """)
             )
 
