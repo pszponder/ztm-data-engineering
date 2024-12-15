@@ -7,6 +7,20 @@ from sseclient import SSEClient
 producer_conf = {"bootstrap.servers": "localhost:9092"}
 kafka_topic = "wikipedia-changes"
 
+# TODO: Before running a producer.
+# 1. Install Kafka CLI tools
+#
+# ```
+# brew install kafka
+# ```
+#
+# 2. Create a virtual environment and install dependencies
+#
+# ```
+# python3 -m venv venv
+# source venv/bin/activate
+# pip install -r requirements.txt
+# ```
 
 def delivery_report(err, msg):
     if err:
@@ -41,6 +55,16 @@ def main():
             print(data)
 
             # TODO: Produce a Kafka messages from a Wikistream update message
+            # * Parse the input message
+            # * Extract fields you need to write 
+            # * Create a JSON object
+            # * Write a messages to a Kafka topic
+            # 
+            # To test your producer, run the following command:
+            #
+            # ```
+            # kafka-console-consumer --bootstrap-server localhost:9092 --topic wikipedia-changes --from-beginning
+            # ```
 
     producer.flush()
 

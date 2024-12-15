@@ -3,6 +3,7 @@ import random
 import textwrap
 import time
 from datetime import datetime
+from order import Order, ORDER_SCHEMA
 
 from confluent_kafka import Producer
 from confluent_kafka.schema_registry import SchemaRegistryClient
@@ -11,19 +12,6 @@ from confluent_kafka.serialization import (
     MessageField,
     SerializationContext,
 )
-
-order_schema = {
-    "type": "record",
-    "name": "Order",
-    "fields": [
-        {"name": "order_id", "type": "int"},
-        {"name": "customer_id", "type": "int"},
-        {"name": "total_price", "type": "float"},
-        {"name": "customer_country", "type": "string"},
-        {"name": "merchant_country", "type": "string"},
-        {"name": "order_datetime", "type": "string"},
-    ],
-}
 
 
 def generate_order():
@@ -37,15 +25,14 @@ def generate_order():
         "Japan",
         "Ireland",
     ]
-    order = {
-        "order_id": random.randint(1000, 9999),
-        "customer_id": random.randint(1, 1000),
-        "total_price": round(random.uniform(20.0, 1000.0), 2),
-        "customer_country": random.choice(countries),
-        "merchant_country": random.choice(countries),
-        "order_date": datetime.now().isoformat(),
-    }
-    return order
+    return Order(
+        order_id=random.randint(1000, 9999),
+        customer_id=random.randint(1, 1000),
+        total_price=round(random.uniform(20.0, 1000.0), 2),
+        customer_country=random.choice(countries),
+        merchant_country=random.choice(countries),
+        order_datetime=datetime.now().isoformat()
+    )
 
 
 def main():
@@ -55,7 +42,9 @@ def main():
     schema_registry_client = SchemaRegistryClient(schema_registry_config)
 
     avro_serializer = AvroSerializer(
-        schema_registry_client, json.dumps(order_schema), lambda obj, ctx: obj
+        schema_registry_client,
+        json.dumps(ORDER_SCHEMA),
+        lambda obj, ctx: obj.to_json()
     )
 
     producer_config = {
@@ -88,7 +77,7 @@ def main():
         )
         producer.produce(
             topic,
-            key=str(order["customer_id"]).encode(),
+            key=str(order.order_id).encode(),
             value=serialized_data,
             callback=delivery_callback,
         )

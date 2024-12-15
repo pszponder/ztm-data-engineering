@@ -32,7 +32,7 @@ def main():
 
             # TODO: Print a message if two conditions are true:
             # * If a change was made by a bot
-            # * If a the change is not minor
+            # * If a change is not minor
             
 
     except KeyboardInterrupt:

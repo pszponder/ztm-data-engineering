@@ -1,24 +1,12 @@
 import argparse
 import json
 
+from order import Order, ORDER_SCHEMA
+
 from confluent_kafka import Consumer, KafkaError
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
 from confluent_kafka.serialization import MessageField, SerializationContext
-
-order_schema = {
-    "type": "record",
-    "name": "Order",
-    "fields": [
-        {"name": "order_id", "type": "int"},
-        {"name": "customer_id", "type": "int"},
-        {"name": "total_price", "type": "float"},
-        {"name": "customer_country", "type": "string"},
-        {"name": "merchant_country", "type": "string"},
-        {"name": "order_date", "type": "string"},
-    ],
-}
-
 
 def main():
     parser = argparse.ArgumentParser(description="Test Kafka consumer")
@@ -35,8 +23,8 @@ def main():
 
     avro_deserializer = AvroDeserializer(
         schema_registry_client,
-        json.dumps(order_schema),
-        lambda obj, ctx: obj,  # Return dict as is
+        json.dumps(ORDER_SCHEMA),
+        lambda obj, ctx: Order.from_dict(obj),  # Return dict as is
     )
 
     config = {
@@ -75,11 +63,10 @@ def process_message(avro_deserializer, msg):
     order = avro_deserializer(
         msg.value(), SerializationContext(msg.topic(), MessageField.VALUE)
     )
-    price = order.get("total_price", 0)
-    if price < 250:
+    if order.total_price < 250:
         return
 
-    print(f"Received order price={price}")
+    print(f"Received order price={order.total_price}")
 
 
 if __name__ == "__main__":
