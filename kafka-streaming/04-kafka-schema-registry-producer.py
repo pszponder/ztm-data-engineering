@@ -21,7 +21,7 @@ order_schema = {
         {"name": "total_price", "type": "float"},
         {"name": "customer_country", "type": "string"},
         {"name": "merchant_country", "type": "string"},
-        {"name": "order_date", "type": "string"},
+        {"name": "order_datetime", "type": "string"},
     ],
 }
 
