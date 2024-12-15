@@ -1,5 +1,5 @@
 
-## 1. Start Kafka
+# 1. Start Kafka
 
 First, start Kafka, Kafka Connect, and Postrges using Docker Compose:
 
@@ -7,7 +7,18 @@ First, start Kafka, Kafka Connect, and Postrges using Docker Compose:
 docker-compose up
 ```
 
-## 2. Create a Debezium connector
+
+# 2. Create a virtual environment and install dependencies
+
+Run the following commands to create a virtual environment and install dependencies:
+
+```sh
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+# 3. Create a Debezium connector
 
 Once you have Kafka Connect running, you need to create a connector to read a stream of updates from Postgres. Run this command to create it:
 
@@ -15,7 +26,7 @@ Once you have Kafka Connect running, you need to create a connector to read a st
 curl -X POST -H "Content-Type: application/json" -d @config_debezium.json  http://localhost:8083/connectors
 ```
 
-## 3. Connect to a database
+# 4. Connect to a database
 
 You will need to execute several SQL operations. To connect to a database, use the following arguments:
 
@@ -24,7 +35,7 @@ You will need to execute several SQL operations. To connect to a database, use t
 * **Password** - `password`
 * **Database** - `onlineshop`
 
-## 4. Create "orders" table
+# 5. Create "orders" table
 
 First, you need to create the `orders` table using the following SQL statement:
 
@@ -43,7 +54,7 @@ CREATE TABLE orders (
 ```
 
 
-## 5. Alter table
+# 6. Alter table
 
 By default, WAL records produced by Postgres will only contain data in a table after the update. To include a snapshot of data before the update, we need to run the following SQL command:
 
@@ -53,7 +64,7 @@ ALTER TABLE orders REPLICA IDENTITY FULL;
 
 After this command every `UPDATE` or `DELETE` operation on the `orders` table, Postgres will log the entire row’s data before and after the update in the Write-Ahead Log.
 
-## 6. Create a new order 
+# 7. Create a new order 
 
 Once you have a table, you can create the `orders` table using this SQL statement.
 
@@ -83,7 +94,7 @@ RETURNING id;
 
 This should return the `id` of the newly created record that you can use to perform an update operation.
 
-## 7. Update an order status
+# 8. Update an order status
 
 Now, we can update the created record. You can do it using this command:
 
@@ -95,7 +106,7 @@ WHERE id = 1
 
 Since it changes the `status` value from `processed` to `refunded` it should.
 
-## 8. Check if Kafka Connect writes records to Kafka
+# 9. Check if Kafka Connect writes records to Kafka
 
 Run the following command to test if Kafka Connect writes records to Kafka:
 
@@ -105,11 +116,11 @@ kafka-console-consumer --bootstrap-server localhost:9092 --topic postgres-.publi
 
 You should see two records: one for the `INSERT` operation and another one for the `UPDATE` operation.
 
-## 9. Implement and run your consumer and see if it works
+# 10. Implement and run your consumer and see if it works
 
 You should now implement and run your Python consumer.
 It should print a single message for the executed update operation.
 
-## 10. (Optional) Create more test records
+# 11. (Optional) Create more test records
 
 If you need more test records, you can repeat steps **7** and **8** again for a new record, but you would need to change the `id` comparison value in the `UPDATE` statement.

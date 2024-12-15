@@ -8,6 +8,7 @@ conf = {
     "auto.offset.reset": "earliest",
 }
 
+# TODO: Read the "README.md" for instructions on how to set up this exercise
 
 def main():
     consumer = Consumer(conf)
@@ -40,6 +41,12 @@ def process_message(msg):
     # Print a string message if two conditions are true:
     # * If a message is for an update operation
     # * If an order status has changed from "processed" to "refunded"
+    # 
+    # Note: If you go though the steps in the README.md, each record will contain two fields:
+    # * `before` - a snapshot of a database record before it was updated
+    # * `after` - a snapshot of a database record after it was updated
+    #
+    # You will need to extract the "status" column values from both records and compare their values
     pass
 
 if __name__ == "__main__":
