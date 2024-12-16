@@ -30,9 +30,12 @@ def main():
                     print(f"Error: {msg.error()}", file=sys.stderr)
                     continue
 
-            # TODO: Print a message if two conditions are true:
+            # TODO: Print a message about a Wikipedia edit if two conditions are true:
             # * If a change was made by a bot
             # * If a change is not minor
+            # 
+            # The printed messages should include the name of an author making a change and 
+            # the title of a changed page
             
 
     except KeyboardInterrupt:

@@ -14,13 +14,21 @@ kafka_topic = "wikipedia-changes"
 # brew install kafka
 # ```
 #
-# 2. Create a virtual environment and install dependencies
+# 2. Start Kafka
+# 
+# ```
+# docker-compose up
+# ```
+#
+# 3. Create a virtual environment and install dependencies
 #
 # ```
 # python3 -m venv venv
 # source venv/bin/activate
 # pip install -r requirements.txt
 # ```
+
+# TODO: Read docs about Wikipedia edit stream: https://www.mediawiki.org/wiki/Manual:RCFeed
 
 def delivery_report(err, msg):
     if err:
@@ -57,7 +65,7 @@ def main():
             # TODO: Produce a Kafka messages from a Wikistream update message
             # * Parse the input message
             # * Extract fields you need to write 
-            # * Create a JSON object
+            # * Create a JSON object for a new Kafka even
             # * Write a messages to a Kafka topic
             # 
             # To test your producer, run the following command:

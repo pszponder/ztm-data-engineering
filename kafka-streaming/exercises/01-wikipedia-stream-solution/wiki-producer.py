@@ -8,7 +8,7 @@ producer_conf = {"bootstrap.servers": "localhost:9092"}
 kafka_topic = "wikipedia-changes"
 
 
-def delivery_report(err, msg):
+def delivery_callback(err, msg):
     if err:
         print("ERROR: Message failed delivery: {}".format(err))
     else:
@@ -52,12 +52,12 @@ def main():
                 "minor": data.get("minor", False),
             }
 
-            value_bytes = json.dumps(message).encode("utf-8")
+            value = json.dumps(message)
             producer.produce(
                 topic=kafka_topic,
-                key=str(id).encode("utf-8"),
-                value=value_bytes,
-                callback=delivery_report,
+                key=id,
+                value=value,
+                callback=delivery_callback,
             )
             producer.poll(0)
 

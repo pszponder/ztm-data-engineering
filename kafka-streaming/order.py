@@ -2,12 +2,12 @@
 class Order:
     def __init__(
         self,
-        order_id: int,
-        customer_id: int,
-        total_price: float,
-        customer_country: str,
-        merchant_country: str,
-        order_datetime: str,
+        order_id,
+        customer_id,
+        total_price,
+        customer_country,
+        merchant_country,
+        order_datetime,
     ):
         self.order_id = order_id
         self.customer_id = customer_id
@@ -18,7 +18,7 @@ class Order:
     
 
     @staticmethod
-    def from_dict(obj: dict) -> "Order":
+    def from_dict(obj):
         return Order(
             order_id=obj["order_id"],
             customer_id=obj["customer_id"],
@@ -28,7 +28,7 @@ class Order:
             order_datetime=obj["order_datetime"],
         )
 
-    def to_json(self) -> dict:
+    def to_dict(self):
         return {
             "order_id": self.order_id,
             "customer_id": self.customer_id,
@@ -38,7 +38,7 @@ class Order:
             "order_datetime": self.order_datetime,
         }
 
-    def __str__(self) -> str:
+    def __str__(self):
         return (f"Order("
                 f"order_id={self.order_id}, "
                 f"customer_id={self.customer_id}, "

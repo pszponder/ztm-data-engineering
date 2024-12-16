@@ -27,7 +27,7 @@ def generate_order():
     ]
     return Order(
         order_id=random.randint(1000, 9999),
-        customer_id=random.randint(1, 1000),
+        customer_id=random.randint(1, 10),
         total_price=round(random.uniform(20.0, 1000.0), 2),
         customer_country=random.choice(countries),
         merchant_country=random.choice(countries),
@@ -44,7 +44,7 @@ def main():
     avro_serializer = AvroSerializer(
         schema_registry_client,
         json.dumps(ORDER_SCHEMA),
-        lambda obj, ctx: obj.to_json()
+        lambda obj, ctx: obj.to_dict()
     )
 
     producer_config = {
