@@ -34,13 +34,9 @@ def main():
                 # No new messages
                 continue
             if msg.error():
-                if msg.error().code() == KafkaError._PARTITION_EOF:
-                    # End of a Kafka partition
-                    continue
-                else:
-                    # Error while reading messages
-                    print(f"[{consumer_name}]Error encountered: {msg.error()}")
-                    continue
+                # Error while reading messages
+                print(f"[{consumer_name}]Error encountered: {msg.error()}")
+                continue
 
             process_message(consumer_name, msg)
 

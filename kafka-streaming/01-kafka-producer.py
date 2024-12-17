@@ -6,7 +6,6 @@ from datetime import datetime
 
 from confluent_kafka import Producer
 
-
 def generate_order():
     countries = [
         "USA",
@@ -24,17 +23,17 @@ def generate_order():
         "total_price": round(random.uniform(20.0, 1000.0), 2),
         "customer_country": random.choice(countries),
         "merchant_country": random.choice(countries),
-        "order_datetime": datetime.now().isoformat(),
+        "order_date": datetime.now().isoformat(),
     }
     return order
 
-
 def main():
-    producer_config = {
+
+    config = {
         "bootstrap.servers": "localhost:9092"
     }
 
-    producer = Producer(producer_config)
+    producer = Producer(config)
 
     topic = "orders"
 
@@ -62,10 +61,9 @@ def main():
             callback=delivery_callback,
         )
 
-        producer.poll(1)
+        producer.poll(0)
 
         time.sleep(1)
-
 
 if __name__ == "__main__":
     main()
