@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from confluent_kafka import Consumer, KafkaError
+from confluent_kafka import Consumer
 
 
 def main():
@@ -24,8 +24,6 @@ def main():
 
     consumer = Consumer(consumer_config)
     consumer.subscribe([topic_name])
-
-    print(f"[{consumer_name}] Starting consumer with group ID '{group_id}'")
 
     try:
         while True:
