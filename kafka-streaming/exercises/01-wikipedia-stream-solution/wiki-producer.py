@@ -55,7 +55,7 @@ def main():
             value = json.dumps(message)
             producer.produce(
                 topic=kafka_topic,
-                key=id,
+                key=str(id),
                 value=value,
                 callback=delivery_callback,
             )

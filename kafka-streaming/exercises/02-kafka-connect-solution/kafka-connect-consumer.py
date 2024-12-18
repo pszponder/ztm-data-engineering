@@ -16,22 +16,19 @@ def main():
     consumer.subscribe([topic])
 
     try:
-        print(f"Consuming messages from topic '{topic}'...")
+        print(f"Consuming messages from topic '{topic}'")
         while True:
             msg = consumer.poll(1.0)
 
             if msg is None:
                 continue
             if msg.error():
-                if msg.error().code() == KafkaError._PARTITION_EOF:
-                    print(f"End of partition reached {msg.topic()} [{msg.partition()}]")
-                elif msg.error():
-                    raise KafkaException(msg.error())
-            else:
-                process_message(msg)
+                print(f"Error: {msg.error()}", file=sys.stderr)
+                continue
+
+            process_message(msg)
 
     finally:
-        print("Closing consumer...")
         consumer.close()
 
 

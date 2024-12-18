@@ -37,10 +37,7 @@ def main():
             user = event.get("user", "Unknown")
 
             if bot and not minor:
-                print(f"Major bot edit detected**: User '{user}' edited '{title}'")
-
-    except KeyboardInterrupt:
-        print("Consumption interrupted by user.")
+                print(f"Major bot edit detected: User '{user}' edited '{title}'")
 
     finally:
         consumer.close()
