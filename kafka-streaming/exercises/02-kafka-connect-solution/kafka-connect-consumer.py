@@ -23,7 +23,7 @@ def main():
             if msg is None:
                 continue
             if msg.error():
-                print(f"Error: {msg.error()}", file=sys.stderr)
+                print(f"Error: {msg.error()}")
                 continue
 
             process_message(msg)
