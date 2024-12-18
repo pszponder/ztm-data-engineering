@@ -38,8 +38,6 @@ def main():
             except json.JSONDecodeError:
                 continue
 
-            print(data)
-
             id = data.get("id")
             message = {
                 "id": id,
