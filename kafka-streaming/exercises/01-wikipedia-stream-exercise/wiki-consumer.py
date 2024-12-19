@@ -1,7 +1,7 @@
 import json
 import sys
 
-from confluent_kafka import Consumer, KafkaError
+from confluent_kafka import Consumer
 
 consumer_conf = {
     "bootstrap.servers": "localhost:9092",
@@ -24,11 +24,8 @@ def main():
                 continue
 
             if msg.error():
-                if msg.error().code() == KafkaError._PARTITION_EOF:
-                    continue
-                else:
-                    print(f"Error: {msg.error()}", file=sys.stderr)
-                    continue
+                print(f"Error: {msg.error()}", file=sys.stderr)
+                continue
 
             # TODO: Print a message about a Wikipedia edit if two conditions are true:
             # * If a change was made by a bot
@@ -37,10 +34,6 @@ def main():
             # The printed messages should include the name of an author making a change and 
             # the title of a changed page
             
-
-    except KeyboardInterrupt:
-        print("Consumption interrupted by user.")
-
     finally:
         consumer.close()
 
