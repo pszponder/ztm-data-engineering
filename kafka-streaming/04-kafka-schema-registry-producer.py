@@ -82,7 +82,7 @@ def main():
             callback=delivery_callback,
         )
 
-        producer.poll(1)
+        producer.poll(0)
 
         time.sleep(1)
 

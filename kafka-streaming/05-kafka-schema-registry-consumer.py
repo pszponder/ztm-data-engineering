@@ -24,7 +24,7 @@ def main():
     avro_deserializer = AvroDeserializer(
         schema_registry_client,
         json.dumps(ORDER_SCHEMA),
-        lambda obj, ctx: Order.from_dict(obj),  # Return dict as is
+        lambda obj, ctx: Order.from_dict(obj),
     )
 
     config = {
@@ -45,13 +45,9 @@ def main():
                 # No new messages
                 continue
             if msg.error():
-                if msg.error().code() == KafkaError._PARTITION_EOF:
-                    # End of a Kafka partition
-                    continue
-                else:
-                    # Error while reading
-                    print(f"Error encountered: {msg.error()}")
-                    continue
+                # Error while reading
+                print(f"Error encountered: {msg.error()}")
+                continue
 
             process_message(avro_deserializer, msg)
 
