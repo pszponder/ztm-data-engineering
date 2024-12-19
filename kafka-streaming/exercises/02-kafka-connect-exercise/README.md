@@ -1,4 +1,9 @@
 
+# 0. Stop all Docker containers 
+
+Before you start, you would need to stop Docker containers related to this bootcamp 
+running on your machine.
+
 # 1. Start Kafka
 
 First, start Kafka, Kafka Connect, and Postrges using Docker Compose:

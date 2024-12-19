@@ -39,11 +39,21 @@ def process_message(msg):
     # * If a message is for an update operation
     # * If an order status has changed from "processed" to "refunded"
     # 
-    # Note: If you go though the steps in the README.md, each record will contain two fields:
+    # Note: If you go though the steps in the README.md,
+    # each record will contain the "payload" object two fields:
     # * `before` - a snapshot of a database record before it was updated
     # * `after` - a snapshot of a database record after it was updated
     #
     # You will need to extract the "status" column values from both records and compare their values
+    # 
+    # To get those field you should do something like this:
+    #
+    # ```py
+    # before = wal_record["payload"]["before"]
+    # after = wal_record["payload"]["after"]
+    # ```
+    #
+    # But keep in mind that one or both of these fields can be None for some events.
     pass
 
 if __name__ == "__main__":
