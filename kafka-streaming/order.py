@@ -53,7 +53,7 @@ ORDER_SCHEMA = {
     "name": "Order",
     "fields": [
         {"name": "order_id", "type": "int"},
-        {"name": "customer_id", "type": "int"},
+        {"name": "customer_id", "type": "string"},
         {"name": "total_price", "type": "float"},
         {"name": "customer_country", "type": "string"},
         {"name": "merchant_country", "type": "string"},

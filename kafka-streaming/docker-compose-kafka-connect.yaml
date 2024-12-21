@@ -38,7 +38,6 @@ services:
       VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       INTERNAL_KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
       INTERNAL_VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
-      PLUGIN_PATH: /kafka/connect
 
   postgres:
     image: postgres:15
@@ -51,10 +50,6 @@ services:
         - "postgres"
         - "-c"
         - "wal_level=logical"
-        - "-c"
-        - "max_replication_slots=10"
-        - "-c"
-        - "max_wal_senders=10"
     ports:
         - "5432:5432"
 

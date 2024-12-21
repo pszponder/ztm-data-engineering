@@ -9,9 +9,6 @@
       "database.user": "user",
       "database.password": "password",
       "database.dbname": "onlineshop",
-      "database.server.name": "postgres_server",
-      "topic.prefix": "postgres-",
-      "slot.name": "debezium_slot",
-      "publication.name": "debezium_publication"
+      "topic.prefix": "postgres-"
     }
   }
