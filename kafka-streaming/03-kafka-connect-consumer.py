@@ -41,9 +41,6 @@ def process_message(msg):
         order.get("payload", {}).get("after", {}).get("total_amount")
     )
 
-    if not total_amount:
-        return
-
     total_amount = decode_decimal(total_amount_bytes)
     print(f"Received order with total amount={total_amount}")
 
