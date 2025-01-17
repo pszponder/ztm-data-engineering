@@ -10,12 +10,16 @@ from confluent_kafka import Producer
 def generate_order():
     order_id = f"order-{random.randint(1000, 9999)}"
     customer_id = f"customer-{random.randint(1, 50)}"
+    product_id = f"product-{random.randint(1, 200)}"
+    quantity = random.randint(1, 5)
     price = round(random.uniform(5.0, 100.0), 2)
     order_time = datetime.now().isoformat()
 
     order_event = {
         "order_id": order_id,
         "customer_id": customer_id,
+        "product_id": product_id,
+        "quantity": quantity,
         "price": price,
         "order_time": order_time
     }

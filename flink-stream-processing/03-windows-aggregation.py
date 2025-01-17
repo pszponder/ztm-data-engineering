@@ -1,12 +1,17 @@
 import json
 from dataclasses import dataclass
 
+from pyflink.common import Time
+from pyflink.common.typeinfo import Types
+from pyflink.datastream.execution_mode import RuntimeExecutionMode
+from pyflink.datastream.window import TumblingProcessingTimeWindows
+
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.common.typeinfo import Types
-from pyflink.datastream import StreamExecutionEnvironment
-from pyflink.datastream.connectors.kafka import KafkaSink, KafkaSource, KafkaRecordSerializationSchema
+from pyflink.datastream.connectors.kafka import KafkaSource
 from pyflink.datastream.execution_mode import RuntimeExecutionMode
 from pyflink.common.watermark_strategy import WatermarkStrategy
+from pyflink.datastream import StreamExecutionEnvironment, ProcessWindowFunction
 
 
 @dataclass
@@ -31,17 +36,29 @@ def parse_order(json_str: str) -> Order:
     )
 
 
-def filter_high_price(order):
-    return order.price > 10
+class AggregateWindowFunction(ProcessWindowFunction):
+    def process(self,
+                key,
+                context,
+                elements):
 
-def convert_order(order):
+        total_quantity = 0
+        total_sum = 0
 
-    simplified = {
-        "order_id": order.order_id,
-        "price": order.price,
-    }
+        for input in elements:
+            quantity_sum, total_spent_sum = input.quantity, input.price
+            total_quantity += quantity_sum
+            total_sum += total_spent_sum
 
-    return json.dumps(simplified)
+        result = {
+            "user_id": key,
+            "total_quantity": total_quantity,
+            "total_spent": total_sum,
+            "window_start": context.window().start,
+            "window_end": context.window().end,
+        }
+        return [json.dumps(result)]
+
 
 def main():
     env = StreamExecutionEnvironment.get_execution_environment()
@@ -50,9 +67,10 @@ def main():
     kafka_source = KafkaSource.builder() \
         .set_bootstrap_servers("localhost:9092") \
         .set_topics("orders") \
-        .set_group_id("flink-consumer-group") \
+        .set_group_id("flink-window-aggregation-group") \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
+
 
     orders_stream = env.from_source(
         kafka_source,
@@ -60,27 +78,17 @@ def main():
         source_name="kafka_source"
     )
 
-    filtered_stream = orders_stream \
+    windowed_stream = orders_stream \
         .map(parse_order) \
-        .filter(filter_high_price) \
-        .map(convert_order, Types.STRING())
+        .key_by(lambda x: x.customer_id) \
+        .window(TumblingProcessingTimeWindows.of(Time.seconds(30))) \
+        .process(AggregateWindowFunction(),
+                 Types.STRING())
 
-    filtered_stream.print()
+    windowed_stream.print()
 
-    kafka_sink = KafkaSink.builder() \
-        .set_bootstrap_servers("localhost:9092") \
-        .set_record_serializer(
-            KafkaRecordSerializationSchema.builder()
-            .set_topic("filtered-orders")
-            .set_value_serialization_schema(SimpleStringSchema())
-            .build()
-        ) \
-        .build()
+    env.execute("Window-based aggregation")
 
-    filtered_stream.sink_to(kafka_sink)
-
-
-    env.execute("Orders stream processing")
 
 if __name__ == "__main__":
     main()
