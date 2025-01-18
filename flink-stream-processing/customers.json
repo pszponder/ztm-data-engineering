@@ -1,0 +1,13 @@
+{"customer_id": "customer-1", "name": "John Doe", "location": "US"}
+{"customer_id": "customer-2", "name": "Jane Smith", "location": "CA"}
+{"customer_id": "customer-3", "name": "Alice Johnson", "location": "GB"}
+{"customer_id": "customer-4", "name": "Bob Brown", "location": "AU"}
+{"customer_id": "customer-5", "name": "Charlie Davis", "location": "IN"}
+{"customer_id": "customer-6", "name": "Dana White", "location": "DE"}
+{"customer_id": "customer-7", "name": "Eve Black", "location": "FR"}
+{"customer_id": "customer-8", "name": "Frank Green", "location": "JP"}
+{"customer_id": "customer-9", "name": "Grace King", "location": "BR"}
+{"customer_id": "customer-10", "name": "Hank Hill", "location": "IE"}
+
+
+{"customer_id": "customer-9", "name": "Grace King", "location": "GB"}
