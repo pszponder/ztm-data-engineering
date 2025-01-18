@@ -80,22 +80,11 @@ Make sure that you see payments data and that it is written every second.
 
 ## 8. Run the Flink Application
 
-Run the Flink application to process the data. Make sure the Kafka connector JAR is included in the classpath.
+Run the Flink application to process the payments data:
 
 ```bash
 flink run \
   --python flink-app.py \
   --target local \
   --jarfile flink-sql-connector-kafka-3.4.0-1.20.jar
-```
-
-
-## 9. Verify Flink Output
-
-Run the Flink application to process the payments data:
-
-```bash
-kafka-console-consumer --topic filtered-payments \
-  --bootstrap-server localhost:9092 \
-  --from-beginning
 ```
