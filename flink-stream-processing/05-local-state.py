@@ -2,22 +2,15 @@ import json
 from dataclasses import dataclass
 
 from pyflink.common.serialization import SimpleStringSchema
+from pyflink.common.typeinfo import Types
+from pyflink.common.watermark_strategy import WatermarkStrategy
 from pyflink.datastream import (
-    StreamExecutionEnvironment
+    StreamExecutionEnvironment, KeyedProcessFunction, RuntimeContext
 )
-from pyflink.datastream.execution_mode import RuntimeExecutionMode
-from pyflink.datastream.functions import KeyedProcessFunction, RuntimeContext
-from pyflink.datastream.state import ValueState, ValueStateDescriptor
-
-from pyflink.common.typeinfo import Types
-from pyflink.datastream.execution_mode import RuntimeExecutionMode
-
-from pyflink.common.serialization import SimpleStringSchema
-from pyflink.common.typeinfo import Types
 from pyflink.datastream.connectors.kafka import KafkaSource
 from pyflink.datastream.execution_mode import RuntimeExecutionMode
-from pyflink.common.watermark_strategy import WatermarkStrategy
-from pyflink.datastream import StreamExecutionEnvironment
+from pyflink.datastream.state import ValueState, ValueStateDescriptor
+
 
 
 @dataclass
@@ -36,32 +29,43 @@ def parse_order(json_str: str) -> Order:
         order_id=data.get("order_id", "unknown"),
         customer_id=data.get("customer_id", "unknown"),
         product_id=data.get("product_id", "unknown"),
-        quantity=data.get("quantity", 0),
+        quantity=int(data.get("quantity", 0)),
         price=float(data.get("price", 0.0)),
         order_time=data.get("order_time", "unknown")
     )
 
 
-class RunningQuantityFunction(KeyedProcessFunction):
+class LoyaltyTierFunction(KeyedProcessFunction):
+
+    TIER_1_THRESHOLD = 300.0
+    TIER_2_THRESHOLD = 1000.0
 
     def open(self, runtime_context: RuntimeContext):
-        state_desc = ValueStateDescriptor("total-quantity", Types.LONG())
+        spend_desc = ValueStateDescriptor("total_spend", Types.FLOAT())
+        self.total_spend_state: ValueState = runtime_context.get_state(spend_desc)
 
-        self.total_quantity_state: ValueState = runtime_context.get_state(state_desc)
+    def process_element(self, order: Order, ctx: 'KeyedProcessFunction.Context'):
+        current_spend = self.total_spend_state.value()
+        if current_spend is None:
+            current_spend = 0.0
 
-    def process_element(self, value, ctx):
-        current_total = self.total_quantity_state.value()
-        if current_total is None:
-            current_total = 0
+        order_total = order.price * order.quantity
+        new_total_spend = current_spend + order_total
+        self.total_spend_state.update(new_total_spend)
 
-        new_total = current_total + value.quantity
-        self.total_quantity_state.update(new_total)
+        if new_total_spend >= self.TIER_1_THRESHOLD:
+            yield json.dumps({
+                "customer_id": order.customer_id,
+                "total_spend": new_total_spend,
+                "tier": 1
+            })
 
-        result = {
-            "customer_id": value.customer_id,
-            "updated_quantity_total": new_total
-        }
-        yield json.dumps(result)
+        if new_total_spend >= self.TIER_2_THRESHOLD:
+            yield json.dumps({
+                "customer_id": order.customer_id,
+                "total_spend": new_total_spend,
+                "tier": 2
+            })
 
 
 def main():
@@ -71,26 +75,28 @@ def main():
     kafka_source = KafkaSource.builder() \
         .set_bootstrap_servers("localhost:9092") \
         .set_topics("orders") \
-        .set_group_id("flink-window-aggregation-group") \
+        .set_group_id("customers-loyalty-tiers") \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
-
     orders_stream = env.from_source(
-        kafka_source,
+        source=kafka_source,
         watermark_strategy=WatermarkStrategy.no_watermarks(),
         source_name="kafka_source"
     )
 
-    windowed_stream = orders_stream \
-        .map(parse_order) \
-        .key_by(lambda x: x.customer_id) \
-        .process(RunningQuantityFunction(), Types.STRING())
+    orders_stream.print("Orders")
 
-    windowed_stream.print("UpdatedUserTotals")
+    loyalty_stream = (
+        orders_stream
+        .map(parse_order)
+        .key_by(lambda o: o.customer_id)
+        .process(LoyaltyTierFunction(), Types.STRING())
+    )
 
-    env.execute("Flink managed state")
+    loyalty_stream.print("LoyaltyTierEvent")
 
+    env.execute("Loyalty Tier Tracking")
 
 if __name__ == "__main__":
     main()
