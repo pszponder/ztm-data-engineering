@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.common.typeinfo import Types
+from pyflink.common.watermark_strategy import WatermarkStrategy
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.datastream.connectors.kafka import KafkaSink, KafkaSource, KafkaRecordSerializationSchema
 from pyflink.datastream.execution_mode import RuntimeExecutionMode
-from pyflink.common.watermark_strategy import WatermarkStrategy
 
 
 @dataclass
@@ -19,7 +19,7 @@ class Order:
     order_time: str
 
 
-def parse_order(json_str: str) -> Order:
+def parse_order(json_str):
     data = json.loads(json_str)
     return Order(
         order_id=data.get("order_id", "unknown"),
@@ -34,6 +34,7 @@ def parse_order(json_str: str) -> Order:
 def filter_high_price(order):
     return order.price > 10
 
+
 def convert_order(order):
 
     simplified = {
@@ -42,6 +43,7 @@ def convert_order(order):
     }
 
     return json.dumps(simplified)
+
 
 def main():
     env = StreamExecutionEnvironment.get_execution_environment()
@@ -79,8 +81,8 @@ def main():
 
     filtered_stream.sink_to(kafka_sink)
 
-
     env.execute("Orders stream processing")
+
 
 if __name__ == "__main__":
     main()

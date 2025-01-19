@@ -3,10 +3,10 @@ from dataclasses import dataclass
 
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.common.typeinfo import Types
+from pyflink.common.watermark_strategy import WatermarkStrategy
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.datastream.connectors.kafka import KafkaSink, KafkaSource, KafkaRecordSerializationSchema
 from pyflink.datastream.execution_mode import RuntimeExecutionMode
-from pyflink.common.watermark_strategy import WatermarkStrategy
 
 
 @dataclass
@@ -19,7 +19,7 @@ class Payment:
     payment_time: str
 
 
-def parse_payment(json_str: str) -> Payment:
+def parse_payment(json_str):
     data = json.loads(json_str)
     return Payment(
         payment_id=data.get("payment_id", "unknown"),
@@ -31,11 +31,11 @@ def parse_payment(json_str: str) -> Payment:
     )
 
 
-def filter_high_amount(payment: Payment) -> bool:
+def filter_high_amount(payment):
     return payment.amount > 500
 
 
-def convert_payment(payment: Payment) -> str:
+def convert_payment(payment):
     simplified = {
         "payment_id": payment.payment_id,
         "amount": payment.amount,
