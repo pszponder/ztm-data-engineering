@@ -4,14 +4,13 @@ from dataclasses import dataclass
 from pyflink.common.serialization import SimpleStringSchema
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment
-from pyflink.datastream.connectors.kafka import KafkaSink, KafkaSource, KafkaRecordSerializationSchema
+from pyflink.datastream.connectors.kafka import KafkaSource
 from pyflink.datastream.execution_mode import RuntimeExecutionMode
 from pyflink.common.watermark_strategy import WatermarkStrategy
 from pyflink.common import Time
 from pyflink.datastream.window import TumblingProcessingTimeWindows
-from pyflink.datastream.functions import RichProcessWindowFunction
 from pyflink.datastream.state import ValueStateDescriptor
-from pyflink.datastream import TimeCharacteristic
+from pyflink.datastream import StreamExecutionEnvironment, ProcessWindowFunction
 
 
 @dataclass
@@ -34,30 +33,47 @@ def parse_payment(json_str: str) -> Payment:
     )
 
 
-class PaymentsAnomaliesDetector(RichProcessWindowFunction):
+class PaymentsAnomaliesDetector(ProcessWindowFunction):
 
     def open(self, runtime_context):
-        descriptor = ValueStateDescriptor("avg_state", Types.DOUBLE())
-        self.avg_state = runtime_context.get_state(descriptor)
+        self.total_count = runtime_context.get_state(
+            ValueStateDescriptor("total_count", Types.LONG())
+        )
+        self.total_amount = runtime_context.get_state(
+            ValueStateDescriptor("total_amount", Types.DOUBLE())
+        )
 
-    def process(self, key, context, elements, out):
-        # Retrieve historical average from state
-        historical_avg = self.avg_state.value() or 0.0
+    def process(self,
+                key,
+                context,
+                elements):
+        current_total_count = self.total_count.value() or 0
+        current_total_amount = self.total_amount.value() or 0
 
-        # Calculate the sum and average of payments in the current window
-        current_sum = sum(payment.amount for payment in elements)
-        current_count = len(elements)
-        current_avg = current_sum / current_count if current_count > 0 else 0.0
+        window_total = 0
+        window_count = 0
 
-        # Detect surge: if current sum exceeds 1.5 times the historical average
-        if historical_avg > 0 and current_sum > 1.5 * historical_avg:
-            alert = (f"Surge detected for merchant {key}: current_sum = {current_sum}, "
-                     f"historical_avg = {historical_avg}")
-            out.collect(alert)
+        for input in elements:
+            window_count += 1
+            window_total += input.amount
 
-        # Update historical average state (simple moving average)
-        new_avg = (historical_avg + current_avg) / 2 if historical_avg else current_avg
-        self.avg_state.update(new_avg)
+        new_total_count = current_total_count + window_count
+        new_total_amount = current_total_amount + window_total
+
+        if current_total_count > 0:
+            current_average = current_total_amount / current_total_count
+            window_average = window_total / window_count
+
+            if window_average > current_average:
+                yield json.dumps({
+                    "merchant_id": key,
+                    "running_average": current_average,
+                    "window_average": window_average,
+                })
+
+
+        self.total_count.update(new_total_count)
+        self.total_amount.update(new_total_amount)
 
 
 def main():
@@ -75,15 +91,14 @@ def main():
         kafka_source,
         watermark_strategy=WatermarkStrategy.no_watermarks(),
         source_name="kafka_source"
-    ).map(parse_payment, output_type=Types.PICKLED_BYTE_ARRAY())
+    ).map(parse_payment)
 
-    surge_stream = payments_stream \
+    anomalies_stream = payments_stream \
         .key_by(lambda payment: payment.merchant_id) \
-        .window(TumblingProcessingTimeWindows.of(Time.minutes(1))) \
+        .window(TumblingProcessingTimeWindows.of(Time.seconds(10))) \
         .process(PaymentsAnomaliesDetector(), output_type=Types.STRING())
 
-    # Print surge alerts to console
-    surge_stream.print()
+    anomalies_stream.print("DetectedAnomalies")
 
     env.execute("Payment anomalies detection")
 
