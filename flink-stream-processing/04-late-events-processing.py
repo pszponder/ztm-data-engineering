@@ -63,7 +63,6 @@ class MyProcessWindowFunction(ProcessWindowFunction):
 def main():
     env = StreamExecutionEnvironment.get_execution_environment()
     env.set_runtime_mode(RuntimeExecutionMode.STREAMING)
-    # Use event-time
     env.set_stream_time_characteristic(TimeCharacteristic.EventTime)
 
     kafka_source = KafkaSource.builder() \
