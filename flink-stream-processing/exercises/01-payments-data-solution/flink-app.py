@@ -60,8 +60,6 @@ def main():
         source_name="kafka_source"
     )
 
-    # payments_stream.print("PaymentsStream")
-
     filtered_stream = payments_stream \
         .map(parse_payment) \
         .filter(filter_high_amount) \
