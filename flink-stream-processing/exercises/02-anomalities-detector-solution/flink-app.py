@@ -57,20 +57,19 @@ class PaymentsAnomaliesDetector(ProcessWindowFunction):
             window_count += 1
             window_total += input.amount
 
-        new_total_count = current_total_count + window_count
-        new_total_amount = current_total_amount + window_total
-
         if current_total_count > 0:
             current_average = current_total_amount / current_total_count
             window_average = window_total / window_count
 
-            if window_average > current_average:
+            if window_average > 1.5 * current_average:
                 yield json.dumps({
                     "merchant_id": key,
                     "running_average": current_average,
                     "window_average": window_average,
                 })
 
+        new_total_count = current_total_count + window_count
+        new_total_amount = current_total_amount + window_total
 
         self.total_count.update(new_total_count)
         self.total_amount.update(new_total_amount)

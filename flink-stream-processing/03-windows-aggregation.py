@@ -1,5 +1,6 @@
 import json
 from dataclasses import dataclass
+from datetime import datetime
 
 from pyflink.common import Time
 from pyflink.common.typeinfo import Types
@@ -46,16 +47,19 @@ class AggregateWindowFunction(ProcessWindowFunction):
         total_sum = 0
 
         for input in elements:
-            quantity_sum, total_spent_sum = input.quantity, input.price
-            total_quantity += quantity_sum
-            total_sum += total_spent_sum
+            total_quantity += input.quantity
+            total_sum += input.quantity * input.price
 
         result = {
-            "user_id": key,
+            "product_id": key,
             "total_quantity": total_quantity,
-            "total_spent": total_sum,
-            "window_start": context.window().start,
-            "window_end": context.window().end,
+            "total_spent": round(total_sum, 2),
+            "window_start": datetime.utcfromtimestamp(
+                context.window().start / 1000
+            ).isoformat(),
+            "window_end": datetime.utcfromtimestamp(
+                context.window().end / 1000
+            ).isoformat(),
         }
         return [json.dumps(result)]
 
@@ -80,7 +84,7 @@ def main():
 
     windowed_stream = orders_stream \
         .map(parse_order) \
-        .key_by(lambda x: x.customer_id) \
+        .key_by(lambda x: x.product_id) \
         .window(TumblingProcessingTimeWindows.of(Time.seconds(30))) \
         .process(AggregateWindowFunction(),
                  Types.STRING())

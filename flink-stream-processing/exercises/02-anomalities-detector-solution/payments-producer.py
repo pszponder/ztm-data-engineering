@@ -11,7 +11,11 @@ def generate_payment():
     payment_id = f"payment-{random.randint(1000, 9999)}"
     user_id = f"user-{random.randint(1, 50)}"
     merchant_id = f"merchant-{random.randint(1, 20)}"
-    amount = round(random.uniform(10.0, 1000.0), 2)
+
+    if random.randint(1, 10) < 2:
+        amount = round(random.uniform(10.0, 10000.0), 2)
+    else:
+        amount = round(random.uniform(10.0, 1000.0), 2)
     payment_time = datetime.now().isoformat()
 
     payment_event = {
