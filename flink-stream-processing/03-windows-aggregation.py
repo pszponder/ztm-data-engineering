@@ -25,7 +25,7 @@ class Order:
     order_time: str
 
 
-def parse_order(json_str: str) -> Order:
+def parse_order(json_str) -> Order:
     data = json.loads(json_str)
     return Order(
         order_id=data.get("order_id", "unknown"),
