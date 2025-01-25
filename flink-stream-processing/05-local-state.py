@@ -12,6 +12,9 @@ from pyflink.datastream.execution_mode import RuntimeExecutionMode
 from pyflink.datastream.state import ValueState, ValueStateDescriptor
 
 
+TIER_1_THRESHOLD = 300.0
+TIER_2_THRESHOLD = 1000.0
+
 
 @dataclass
 class Order:
@@ -23,7 +26,7 @@ class Order:
     order_time: str
 
 
-def parse_order(json_str: str) -> Order:
+def parse_order(json_str) -> Order:
     data = json.loads(json_str)
     return Order(
         order_id=data.get("order_id", "unknown"),
@@ -37,30 +40,25 @@ def parse_order(json_str: str) -> Order:
 
 class LoyaltyTierFunction(KeyedProcessFunction):
 
-    TIER_1_THRESHOLD = 300.0
-    TIER_2_THRESHOLD = 1000.0
+    def open(self, runtime_context):
+        spend_desc = ValueStateDescriptor("total_spend", Types.DOUBLE())
+        self.total_spend_state = runtime_context.get_state(spend_desc)
 
-    def open(self, runtime_context: RuntimeContext):
-        spend_desc = ValueStateDescriptor("total_spend", Types.FLOAT())
-        self.total_spend_state: ValueState = runtime_context.get_state(spend_desc)
-
-    def process_element(self, order: Order, ctx: 'KeyedProcessFunction.Context'):
-        current_spend = self.total_spend_state.value()
-        if current_spend is None:
-            current_spend = 0.0
+    def process_element(self, order, ctx):
+        current_spend = self.total_spend_state.value() or 0
 
         order_total = order.price * order.quantity
         new_total_spend = current_spend + order_total
         self.total_spend_state.update(new_total_spend)
 
-        if new_total_spend >= self.TIER_1_THRESHOLD:
+        if new_total_spend >= TIER_1_THRESHOLD:
             yield json.dumps({
                 "customer_id": order.customer_id,
                 "total_spend": new_total_spend,
                 "tier": 1
             })
 
-        if new_total_spend >= self.TIER_2_THRESHOLD:
+        if new_total_spend >= TIER_2_THRESHOLD:
             yield json.dumps({
                 "customer_id": order.customer_id,
                 "total_spend": new_total_spend,
@@ -85,14 +83,10 @@ def main():
         source_name="kafka_source"
     )
 
-    orders_stream.print("Orders")
-
-    loyalty_stream = (
-        orders_stream
-        .map(parse_order)
-        .key_by(lambda o: o.customer_id)
+    loyalty_stream = orders_stream \
+        .map(parse_order) \
+        .key_by(lambda o: o.customer_id) \
         .process(LoyaltyTierFunction(), Types.STRING())
-    )
 
     loyalty_stream.print("LoyaltyTierEvent")
 
