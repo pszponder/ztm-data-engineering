@@ -20,15 +20,13 @@ def main():
     }
     producer = Producer(producer_config)
 
-    print("Enter customer's data")
+    print("Enter products's data")
     try:
         while True:
             json_line = input("> ").strip()
-            print("Read line")
             if json_line:
-                print("Sending a line")
                 producer.produce(
-                    "customers",
+                    "products",
                     key=None,
                     value=json_line,
                     callback=delivery_callback

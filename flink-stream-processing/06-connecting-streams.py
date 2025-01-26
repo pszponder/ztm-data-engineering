@@ -21,13 +21,13 @@ class Order:
     product_id: str
     quantity: int
     price: float
-    timestamp: str
+    order_time: str
 
 @dataclass
-class Customer:
-    customer_id: str
+class Product:
+    product_id: str
     name: str
-    location: str
+    category: str
 
 
 def parse_order(line: str):
@@ -38,37 +38,36 @@ def parse_order(line: str):
         product_id=data.get("product_id", ""),
         quantity=int(data.get("quantity", 0)),
         price=float(data.get("price", 0.0)),
-        timestamp=data.get("timestamp", "")
+        order_time=data.get("order_time", "")
     )
 
-def parse_customer(line: str):
+def parse_product(line: str):
     data = json.loads(line)
-    return Customer(
-        customer_id=data.get("customer_id", ""),
+    return Product(
+        product_id=data.get("product_id", ""),
         name=data.get("name", "Unknown"),
-        location=data.get("location", "Unknown")
+        category=data.get("category", "Unknown")
     )
 
 
-class OrdersCustomersCoProcess(CoProcessFunction):
+class OrdersProductsCoProcess(CoProcessFunction):
 
     def open(self, runtime_context: RuntimeContext):
-        customer_desc = ValueStateDescriptor("customer_info", Types.PICKLED_BYTE_ARRAY())
-        self.customer_state = runtime_context.get_state(customer_desc)
+        product_desc = ValueStateDescriptor("product_info", Types.PICKLED_BYTE_ARRAY())
+        self.product_state = runtime_context.get_state(product_desc)
 
     def process_element1(self, value, ctx):
-        customer_val = self.customer_state.value()
+        product = self.product_state.value()
 
-        if customer_val:
+        if product:
             enriched = {
                 "order_id": value.order_id,
                 "customer_id": value.customer_id,
                 "product_id": value.product_id,
                 "quantity": value.quantity,
                 "price": value.price,
-                "order_timestamp": value.timestamp,
-                "customer_name": customer_val.name,
-                "customer_location": customer_val.location,
+                "product_name": product.name,
+                "product_category": product.category,
             }
         else:
             enriched = {
@@ -77,15 +76,14 @@ class OrdersCustomersCoProcess(CoProcessFunction):
                 "product_id": value.product_id,
                 "quantity": value.quantity,
                 "price": value.price,
-                "order_timestamp": value.timestamp,
-                "customer_name": "Unknown",
-                "customer_location": "Unknown",
+                "product_name": "Unknown",
+                "product_category": "Unknown",
             }
 
         yield json.dumps(enriched)
 
     def process_element2(self, value, ctx):
-        self.customer_state.update(value)
+        self.product_state.update(value)
 
 
 def main():
@@ -99,9 +97,9 @@ def main():
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
-    customers_source = KafkaSource.builder() \
+    products_source = KafkaSource.builder() \
         .set_bootstrap_servers("localhost:9092") \
-        .set_topics("customers") \
+        .set_topics("products") \
         .set_group_id("streams_join_consumer") \
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
@@ -112,28 +110,27 @@ def main():
         source_name="orders_source"
     ).map(parse_order)
 
-    customers_stream = env.from_source(
-        source=customers_source,
+    products_stream = env.from_source(
+        source=products_source,
         watermark_strategy=WatermarkStrategy.no_watermarks(),
-        source_name="customers_source"
-    ).map(parse_customer)
+        source_name="products_source"
+    ).map(parse_product)
 
-    orders_stream.print("OrdersStream")
-    customers_stream.print("CustomersStream")
+    products_stream.print("ProductsStream")
 
-    keyed_orders = orders_stream.key_by(lambda o: o.customer_id)
-    keyed_customers = customers_stream.key_by(lambda c: c.customer_id)
+    keyed_orders = orders_stream.key_by(lambda o: o.product_id)
+    keyed_products = products_stream.key_by(lambda c: c.product_id)
 
-    connected = keyed_orders.connect(keyed_customers)
+    connected = keyed_orders.connect(keyed_products)
 
     enriched_stream = connected.process(
-        OrdersCustomersCoProcess(),
+        OrdersProductsCoProcess(),
         output_type=Types.STRING()
     )
 
     enriched_stream.print("EnrichedOrder")
 
-    env.execute("Joins demo")
+    env.execute("Connecting streams")
 
 
 if __name__ == "__main__":
