@@ -22,7 +22,7 @@ class Order:
     order_time: str
 
 
-def parse_order(json_str: str) -> Order:
+def parse_order(json_str) -> Order:
     data = json.loads(json_str)
     order_time_seconds = datetime.fromisoformat(data["order_time"])
     print("Order time: " + str(order_time_seconds))
@@ -37,7 +37,7 @@ def parse_order(json_str: str) -> Order:
 
 
 class OrderTimestampAssigner(TimestampAssigner):
-    def extract_timestamp(self, value: Order, record_timestamp: int) -> int:
+    def extract_timestamp(self, value, record_timestamp) -> int:
         dt = datetime.fromisoformat(value.order_time)
         return int(dt.timestamp() * 1000)
 

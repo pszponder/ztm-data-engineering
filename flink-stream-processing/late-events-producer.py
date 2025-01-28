@@ -14,10 +14,9 @@ def generate_order():
     quantity = random.randint(1, 5)
     price = round(random.uniform(5.0, 100.0), 2)
     current_time = datetime.now()
-    # Sometimes intentionally late by up to 2 minutes
+
     if random.random() < 0.2:
         late_by = random.randint(60, 120)
-        # late_by = 0
         event_time = current_time - timedelta(seconds=late_by)
     else:
         event_time = current_time
