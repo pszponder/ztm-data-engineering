@@ -25,7 +25,6 @@ class Order:
 def parse_order(json_str) -> Order:
     data = json.loads(json_str)
     order_time_seconds = datetime.fromisoformat(data["order_time"])
-    print("Order time: " + str(order_time_seconds))
     return Order(
         order_id=data.get("order_id", "unknown"),
         customer_id=data.get("customer_id", "unknown"),
@@ -42,20 +41,29 @@ class OrderTimestampAssigner(TimestampAssigner):
         return int(dt.timestamp() * 1000)
 
 
-class MyProcessWindowFunction(ProcessWindowFunction):
-    def process(self, key, context, elements):
+class AggregateWindowFunction(ProcessWindowFunction):
+    def process(self,
+                key,
+                context,
+                elements):
+
         total_quantity = 0
-        total_spent = 0
-        for order in elements:
-            total_quantity += order.quantity
-            total_spent += order.price
+        total_sum = 0
+
+        for input in elements:
+            total_quantity += input.quantity
+            total_sum += input.quantity * input.price
 
         result = {
-            "user_id": key,
+            "product_id": key,
             "total_quantity": total_quantity,
-            "total_spent": total_spent,
-            "window_start": context.window().start,
-            "window_end": context.window().end
+            "total_spent": round(total_sum, 2),
+            "window_start": datetime.utcfromtimestamp(
+                context.window().start / 1000
+            ).isoformat(),
+            "window_end": datetime.utcfromtimestamp(
+                context.window().end / 1000
+            ).isoformat(),
         }
         return [json.dumps(result)]
 
@@ -72,25 +80,25 @@ def main():
         .set_value_only_deserializer(SimpleStringSchema()) \
         .build()
 
-    watermark_strategy = WatermarkStrategy \
-        .for_bounded_out_of_orderness(Duration.of_seconds(10)) \
-        .with_timestamp_assigner(OrderTimestampAssigner())
-
     stream = env.from_source(
         kafka_source,
         watermark_strategy=WatermarkStrategy.no_watermarks(),
         source_name="kafka_source"
     )
 
+    watermark_strategy = WatermarkStrategy \
+        .for_bounded_out_of_orderness(Duration.of_seconds(10)) \
+        .with_timestamp_assigner(OrderTimestampAssigner())
+
     late_tag = OutputTag("late-events", Types.PICKLED_BYTE_ARRAY())
 
     windowed_stream = stream \
         .map(parse_order) \
         .assign_timestamps_and_watermarks(watermark_strategy) \
-        .key_by(lambda x: x.customer_id) \
+        .key_by(lambda x: x.product_id) \
         .window(TumblingEventTimeWindows.of(Time.seconds(30))) \
         .side_output_late_data(late_tag) \
-        .process(MyProcessWindowFunction(), Types.STRING())
+        .process(AggregateWindowFunction(), Types.STRING())
 
     windowed_stream.print("Aggregated")
 
