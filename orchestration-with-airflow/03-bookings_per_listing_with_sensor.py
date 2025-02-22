@@ -1,6 +1,7 @@
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
+from airflow.sensors.filesystem import FileSensor
 from datetime import datetime
 import os
 import json
@@ -12,6 +13,7 @@ default_args = {
 }
 
 @dag(
+    'bookings_per_listing_with_sensor',
     default_args=default_args,
     schedule_interval='@hourly',
     catchup=False,
@@ -49,6 +51,14 @@ def bookings_spark_pipeline():
 
         return file_path
 
+    wait_for_listings_file = FileSensor(
+        task_id="wait_for_listings_file",
+        fs_conn_id="fs_default",
+        filepath="/tmp/data/listings/{{ execution_date.strftime('%Y-%m') }}/listings.csv.gz",
+        poke_interval=30,
+        timeout=600,
+    )
+
     spark_job = SparkSubmitOperator(
         task_id="process_airbnb_and_bookings",
         application="bookings_per_listing_spark.py",
@@ -64,5 +74,6 @@ def bookings_spark_pipeline():
 
     bookings_file = generate_bookings()
     bookings_file >> spark_job
+    wait_for_listings_file >> spark_job
 
 dag_instance = bookings_spark_pipeline()
