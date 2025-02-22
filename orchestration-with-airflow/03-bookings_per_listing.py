@@ -47,8 +47,6 @@ def bookings_spark_pipeline():
 
         print(f"Generated bookings data written to {file_path}")
 
-        return file_path
-
     spark_job = SparkSubmitOperator(
         task_id="process_airbnb_and_bookings",
         application="bookings_per_listing_spark.py",

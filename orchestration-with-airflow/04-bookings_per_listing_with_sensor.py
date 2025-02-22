@@ -49,8 +49,6 @@ def bookings_spark_pipeline():
 
         print(f"Generated bookings data written to {file_path}")
 
-        return file_path
-
     wait_for_listings_file = FileSensor(
         task_id="wait_for_listings_file",
         fs_conn_id="fs_default",
