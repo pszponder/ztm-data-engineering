@@ -21,7 +21,11 @@ def main():
         mode="PERMISSIVE"
     )
 
-    bookings = spark.read.json(args.bookings_file)
+    bookings = spark.read.csv(
+        args.bookings_file,
+        header=True,
+        inferSchema=True,
+    )
 
     aggregated = listings \
       .join(bookings, listings["id"] == bookings["listing_id"], how="inner") \

@@ -34,6 +34,7 @@ def bookings_spark_pipeline():
                 "booking_id": random.randint(1000, 5000),
                 "listing_id": random.choice([13913, 17402, 24328, 33332, 116268, 117203, 127652, 127860]),
                 "user_id": random.randint(1000, 5000),
+                "booking_time": execution_date.strftime("%Y-%m-%d %H:%M:%S"),
                 "status": random.choice(["confirmed", "cancelled", "pending"])
             }
             bookings.append(booking)
@@ -48,7 +49,7 @@ def bookings_spark_pipeline():
         print(f"Generated bookings data written to {file_path}")
 
     spark_job = SparkSubmitOperator(
-        task_id="process_airbnb_and_bookings",
+        task_id="process_listings_and_bookings",
         application="bookings_per_listing_spark.py",
         name="airbnb_listings_bookings_join",
         application_args=[

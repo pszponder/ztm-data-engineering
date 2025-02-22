@@ -27,7 +27,7 @@ def bookings_spark_pipeline():
         execution_date = context["execution_date"]
 
         file_date = execution_date.strftime("%Y-%m-%d_%H")
-        file_path = f"/tmp/data/bookings/{file_date}/bookings.json"
+        file_path = f"/tmp/data/bookings/{file_date}/bookings.csv"
 
         num_bookings = random.randint(30, 50)
         bookings = []
@@ -36,6 +36,7 @@ def bookings_spark_pipeline():
                 "booking_id": random.randint(1000, 5000),
                 "listing_id": random.choice([13913, 17402, 24328, 33332, 116268, 117203, 127652, 127860]),
                 "user_id": random.randint(1000, 5000),
+                "booking_time": execution_date.strftime("%Y-%m-%d %H:%M:%S"),
                 "status": random.choice(["confirmed", "cancelled", "pending"])
             }
             bookings.append(booking)
@@ -58,12 +59,12 @@ def bookings_spark_pipeline():
     )
 
     spark_job = SparkSubmitOperator(
-        task_id="process_airbnb_and_bookings",
+        task_id="process_listings_and_bookings",
         application="bookings_per_listing_spark.py",
         name="airbnb_listings_bookings_join",
         application_args=[
             "--listings_file", "/tmp/data/listings/{{ execution_date.strftime('%Y-%m') }}/listings.csv.gz",
-            "--bookings_file", "/tmp/data/bookings/{{ execution_date.strftime('%Y-%m-%d_%H') }}/bookings.json",
+            "--bookings_file", "/tmp/data/bookings/{{ execution_date.strftime('%Y-%m-%d_%H') }}/bookings.csv",
             "--output_path", "/tmp/data/bookings_per_listing/{{ execution_date.strftime('%Y-%m-%d_%H') }}"
         ],
         conn_id='spark_default',

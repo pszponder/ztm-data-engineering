@@ -13,7 +13,7 @@ from airflow.operators.python import get_current_context
     catchup=False,
     description=""
 )
-def average_page_visits_2():
+def average_page_visits():
 
     def get_data_path():
         context = get_current_context()
@@ -57,4 +57,4 @@ def average_page_visits_2():
 
     produce_airbnb_data() >> process_airbnb_data()
 
-demo_dag = average_page_visits_2()
+demo_dag = average_page_visits()
