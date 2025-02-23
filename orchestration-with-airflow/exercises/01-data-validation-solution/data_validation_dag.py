@@ -1,18 +1,17 @@
 from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
-from datetime import datetime, timedelta
+from datetime import datetime
 import os
-import csv
 import json
 import random
 
 default_args = {
     "owner": "airflow",
-    "start_date": datetime(2023, 1, 1),
+    "start_date": datetime(2025, 1, 1),
 }
 
 @dag(
-    'data_quality_pipeline',
+   "data_quality_pipeline",
     default_args=default_args,
     schedule_interval='* * * * *',
     catchup=False,
@@ -33,17 +32,16 @@ def data_quality_pipeline():
 
         return ""
 
-    def generate_listing_id(correct_prob=0.7):
+    def generate_listing_id():
         if random.random() < CORRECT_PROB:
             return random.choice([1, 2, 3, 4, 5])
 
         return ""
 
     def generate_user_id(correct_prob=0.7):
-        """Return a valid user_id (integer between 1000 and 5000) or a broken value (empty string)."""
         return random.randint(1000, 5000) if random.random() < correct_prob else ""
 
-    def generate_booking_time(execution_date, correct_prob=0.7):
+    def generate_booking_time(execution_date):
         if random.random() < CORRECT_PROB:
             return execution_date.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -58,7 +56,7 @@ def data_quality_pipeline():
     @task
     def generate_bookings():
         context = get_current_context()
-        file_path = get_bookings_path(context)
+        booking_path = get_bookings_path(context)
 
         num_bookings = random.randint(5, 15)
         bookings = []
@@ -73,14 +71,14 @@ def data_quality_pipeline():
             }
             bookings.append(booking)
 
-        directory = os.path.dirname(file_path)
+        directory = os.path.dirname(booking_path)
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        with open(file_path, "w") as f:
-            json.dump(bookings, f)
+        with open(booking_path, "w") as f:
+            json.dump(bookings, f, indent=4)
 
-        print(f"Written to file: {file_path}")
+        print(f"Written to file: {booking_path}")
 
     def get_anomalies_path(context):
         execution_date = context["execution_date"]
@@ -90,12 +88,12 @@ def data_quality_pipeline():
     @task
     def quality_check():
         context = get_current_context()
-        file_path = get_bookings_path(context)
+        booking_path = get_bookings_path(context)
 
         anomalies = []
         valid_statuses = {"confirmed", "pending", "cancelled"}
 
-        with open(file_path, "r") as f:
+        with open(booking_path, "r") as f:
             bookings = json.load(f)
 
         for index, row in enumerate(bookings):
@@ -118,14 +116,20 @@ def data_quality_pipeline():
             if row_anomalies:
                 anomalies.append({
                     "booking_id": index,
-                    "anomalies": "; ".join(row_anomalies)
+                    "anomalies": row_anomalies,
                 })
 
         anomalies_file = get_anomalies_path(context)
-        with open(anomalies_file, "w") as jsonfile:
-            json.dump(anomalies, jsonfile, indent=4)
-        print(f"Quality check complete for {file_path}. Anomalies found: {len(anomalies)}")
-        print(f"Detailed anomalies report written to {anomalies_file}")
+        directory = os.path.dirname(anomalies_file)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+
+        with open(anomalies_file, "w") as f:
+            json.dump(anomalies, f, indent=4)
+
+        print(f"Completed validation for {booking_path}. Anomalies found: {len(anomalies)}")
+        print(f"Result written to {anomalies_file}")
 
     generate_bookings() >> quality_check()
 
