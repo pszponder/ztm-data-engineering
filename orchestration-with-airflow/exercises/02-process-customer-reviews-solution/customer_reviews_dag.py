@@ -20,7 +20,7 @@ def guest_reviews_minutely_etl():
 
     @task
     def extract_reviews():
-        pg_hook = PostgresHook(postgres_conn_id="postgres_default")
+        pg_hook = PostgresHook(postgres_conn_id="postgres_rental_site")
 
         query = """
             SELECT review_id, listing_id, guest_id, review_score, review_comment, review_date
@@ -56,7 +56,7 @@ def guest_reviews_minutely_etl():
             "--input_file", "/tmp/data/guest_reviews/{{ execution_date.strftime('%Y%m%d_%H%M') }}/guest_reviews.csv",
             "--output_file", "/tmp/data/avg_review_score_by_listing/{{ execution_date.strftime('%Y%m%d_%H%M') }}/avg_review_score_by_listing.csv"
         ],
-        conn_id='spark_default',
+        conn_id='spark_rental_site',
         conf={'master': 'local[*]'},
     )
 
