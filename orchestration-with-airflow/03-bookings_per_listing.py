@@ -58,7 +58,6 @@ def bookings_spark_pipeline():
             "--output_path", "/tmp/data/bookings_per_listing/{{ execution_date.strftime('%Y-%m-%d_%H') }}"
         ],
         conn_id='spark_default',
-        conf={'master': 'local[*]'},
     )
 
     bookings_file = generate_bookings()

@@ -29,15 +29,15 @@ def bookings_per_listing_with_sensor_3():
 
         file_path = f"/tmp/data/bookings/{file_date}/bookings.csv"
 
-        start_of_hour = execution_date.replace(second=0, microsecond=0)
-        end_of_hour = start_of_hour + timedelta(hours=1)
+        start_of_minute = execution_date.replace(second=0, microsecond=0)
+        end_of_minute = start_of_minute + timedelta(hours=1)
 
         pg_hook = PostgresHook(postgres_conn_id="postgres_default")
         query = f"""
             SELECT booking_id, listing_id, user_id, booking_time, status
             FROM bookings
-            WHERE booking_time >= '{start_of_hour.strftime('%Y-%m-%d %H:%M:%S')}'
-              AND booking_time < '{end_of_hour.strftime('%Y-%m-%d %H:%M:%S')}'
+            WHERE booking_time >= '{start_of_minute.strftime('%Y-%m-%d %H:%M:%S')}'
+              AND booking_time < '{end_of_minute.strftime('%Y-%m-%d %H:%M:%S')}'
         """
         records = pg_hook.get_records(query)
 
@@ -93,7 +93,6 @@ def bookings_per_listing_with_sensor_3():
             "--output_path", "/tmp/data/bookings_per_listing/{{ execution_date.strftime('%Y-%m-%d_%H-%M') }}"
         ],
         conn_id='spark_default',
-        conf={'master': 'local[*]'},
     )
 
     bookings_file = read_bookings_from_postgres()
