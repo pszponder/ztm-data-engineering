@@ -19,7 +19,7 @@ default_args = {
     catchup=False,
     description="",
 )
-def bookings_per_listing_with_sensor_3():
+def bookings_per_listing_with_sensor():
 
     @task
     def read_bookings_from_postgres():
@@ -76,7 +76,7 @@ def bookings_per_listing_with_sensor_3():
 
     wait_for_listings_file = FileSensor(
         task_id="wait_for_listings_file",
-        fs_conn_id="fs_default",
+        fs_conn_id="local_fs",
         filepath="/tmp/data/listings/{{ execution_date.strftime('%Y-%m') }}/listings.csv.gz",
         poke_interval=30,
         timeout=600,
@@ -98,4 +98,4 @@ def bookings_per_listing_with_sensor_3():
     bookings_file >> spark_job
     wait_for_listings_file >> spark_job
 
-dag_instance = bookings_per_listing_with_sensor_3()
+dag_instance = bookings_per_listing_with_sensor()
