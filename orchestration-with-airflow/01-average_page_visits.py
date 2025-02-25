@@ -9,7 +9,7 @@ from airflow.operators.python import get_current_context
 @dag(
     'average_page_visits',
     start_date=datetime(2023, 1, 1),
-    schedule_interval='@hourly',
+    schedule_interval='* * * * *',
     catchup=False,
     description=""
 )
@@ -22,7 +22,8 @@ def average_page_visits():
         return f"/tmp/page_visits/{file_date}.json"
 
     @task
-    def produce_airbnb_data():
+    def produce_page_visits_data():
+
         page_visits = [
             {"id": 1, "name": "Cozy Apartment", "price": 120, "page_visits": random.randint(0, 50)},
             {"id": 2, "name": "Luxury Condo", "price": 300, "page_visits": random.randint(0, 50)},
@@ -42,7 +43,7 @@ def average_page_visits():
         print(f"Written to file: {file_path}")
 
     @task
-    def process_airbnb_data():
+    def process_page_visits_data():
         file_path = get_data_path()
 
         with open(file_path, "r") as f:
@@ -51,6 +52,6 @@ def average_page_visits():
         average_price = sum(page_visit["page_visits"] for page_visit in page_visits) / len(page_visits)
         print(f"Average number of page visits {average_price}")
 
-    produce_airbnb_data() >> process_airbnb_data()
+    produce_page_visits_data() >> process_page_visits_data()
 
 demo_dag = average_page_visits()

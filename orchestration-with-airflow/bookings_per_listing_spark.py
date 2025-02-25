@@ -9,7 +9,7 @@ def main():
     parser.add_argument("--output_path", required=True, help="Output path for the aggregated results")
     args = parser.parse_args()
 
-    spark = SparkSession.builder.appName("InsideAirbnbListingsBookingsJoin").getOrCreate()
+    spark = SparkSession.builder.appName("ListingsBookingsJoin").getOrCreate()
 
     listings = spark.read.csv(args.listings_file,
         header=True,

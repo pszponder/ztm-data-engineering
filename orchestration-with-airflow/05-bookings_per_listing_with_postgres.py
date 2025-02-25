@@ -13,7 +13,7 @@ default_args = {
 }
 
 @dag(
-    'bookings_per_listing_with_sensor_3',
+    'bookings_spark_pipeline',
     default_args=default_args,
     schedule_interval='* * * * *',
     catchup=False,
@@ -86,7 +86,7 @@ def bookings_per_listing_with_sensor_3():
     spark_job = SparkSubmitOperator(
         task_id="process_listings_and_bookings",
         application="bookings_per_listing_spark.py",
-        name="airbnb_listings_bookings_join",
+        name="listings_bookings_join",
         application_args=[
             "--listings_file", "/tmp/data/listings/{{ execution_date.strftime('%Y-%m') }}/listings.csv.gz",
             "--bookings_file", "/tmp/data/bookings/{{ execution_date.strftime('%Y-%m-%d_%H-%M') }}/bookings.csv",

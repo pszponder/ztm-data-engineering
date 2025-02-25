@@ -35,7 +35,7 @@ pip install 'apache-airflow==2.10.4' \
 
 
 ```sh
-airflow db migrate
+airflow db migrate
 ```
 
 # 5. Create a folder for DAGs
