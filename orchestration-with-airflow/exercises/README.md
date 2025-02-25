@@ -25,14 +25,26 @@ source venv/bin/activate
 
 # 3. Install Airflow
 
+Install Airflow using these commands:
 
 ```sh
-pip install 'apache-airflow==2.10.4' \
-  --constraint "https://raw.githubusercontent.com/apache/airflow/constraints-2.10.4/constraints-3.12.txt"
+AIRFLOW_VERSION="2.10.4"
+# Set this variable to your Python version
+PYTHON_VERSION="3.12"
+
+CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+
+pip install "apache-airflow==${AIRFLOW_VERSION}" \
+    --constraint "${CONSTRAINT_URL}"
 ```
+
+Not all Airflow versions are compatible with all Python versions.
+
+You can find a list of compatible versions on this page: https://pypi.org/project/apache-airflow/
 
 # 4. Create an Airflow database
 
+Run this command to create an Airflow database
 
 ```sh
 airflow db migrate
