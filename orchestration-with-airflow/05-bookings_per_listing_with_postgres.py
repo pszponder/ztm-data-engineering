@@ -63,17 +63,16 @@ def bookings_per_listing_with_sensor_3():
         with open(file_path, "w", newline="") as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
-            for record in records:
+            for booking in bookings:
                 writer.writerow({
-                    "booking_id": record[0],
-                    "listing_id": record[1],
-                    "user_id": record[2],
-                    "booking_time": record[3].strftime('%Y-%m-%d %H:%M:%S') if record[3] else None,
-                    "status": record[4]
+                    "booking_id": booking["booking_id"],
+                    "listing_id": booking["listing_id"],
+                    "user_id": booking["user_id"],
+                    "booking_time": booking["booking_time"],
+                    "status": booking["status"]
                 })
-        print(f"Bookings data from Postgres written to {file_path}")
-        return file_path
 
+        print(f"Generated bookings data written to {file_path}")
 
     wait_for_listings_file = FileSensor(
         task_id="wait_for_listings_file",

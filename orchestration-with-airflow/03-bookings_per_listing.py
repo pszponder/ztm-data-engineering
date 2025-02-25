@@ -1,9 +1,9 @@
-cfrom airflow.decorators import dag, task
+from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
 from datetime import datetime
 import os
-import json
+import csv
 import random
 
 default_args = {
@@ -25,8 +25,8 @@ def bookings_spark_pipeline():
         context = get_current_context()
         execution_date = context["execution_date"]
 
-        file_date = execution_date.strftime("%Y-%m-%d_%H")
-        file_path = f"/tmp/data/bookings/{file_date}/bookings.json"
+        file_date = execution_date.strftime("%Y-%m-%d_%H%M")
+        file_path = f"/tmp/data/bookings/{file_date}/bookings.csv"
 
         num_bookings = random.randint(30, 50)
         bookings = []
@@ -44,8 +44,19 @@ def bookings_spark_pipeline():
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        with open(file_path, "w") as f:
-            json.dump(bookings, f)
+        fieldnames = ["booking_id", "listing_id", "user_id", "booking_time", "status"]
+
+        with open(file_path, "w", newline="") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for booking in bookings:
+                writer.writerow({
+                    "booking_id": booking["booking_id"],
+                    "listing_id": booking["listing_id"],
+                    "user_id": booking["user_id"],
+                    "booking_time": booking["booking_time"],
+                    "status": booking["status"]
+                })
 
         print(f"Generated bookings data written to {file_path}")
 
@@ -55,8 +66,8 @@ def bookings_spark_pipeline():
         name="listings_bookings_join",
         application_args=[
             "--listings_file", "/tmp/data/listings/{{ execution_date.strftime('%Y-%m') }}/listings.csv.gz",
-            "--bookings_file", "/tmp/data/bookings/{{ execution_date.strftime('%Y-%m-%d_%H') }}/bookings.json",
-            "--output_path", "/tmp/data/bookings_per_listing/{{ execution_date.strftime('%Y-%m-%d_%H') }}"
+            "--bookings_file", "/tmp/data/bookings/{{ execution_date.strftime('%Y-%m-%d_%H%M') }}/bookings.csv",
+            "--output_path", "/tmp/data/bookings_per_listing/{{ execution_date.strftime('%Y-%m-%d_%H%M') }}"
         ],
         conn_id='spark_booking',
     )

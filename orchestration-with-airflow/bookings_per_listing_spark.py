@@ -9,6 +9,8 @@ def main():
     parser.add_argument("--output_path", required=True, help="Output path for the aggregated results")
     args = parser.parse_args()
 
+    print(f"Reading listings from {args.listings_file}")
+    print(f"Reading bookings from {args.bookings_file}")
     spark = SparkSession.builder.appName("ListingsBookingsJoin").getOrCreate()
 
     listings = spark.read.csv(args.listings_file,
