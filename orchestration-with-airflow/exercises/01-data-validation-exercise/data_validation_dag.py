@@ -10,13 +10,9 @@ default_args = {
     "start_date": datetime(2025, 1, 1),
 }
 
-@dag(
-   "data_quality_pipeline",
-    default_args=default_args,
-    schedule_interval='* * * * *',
-    catchup=False,
-    description="Data Quality Check DAG",
-)
+# TODO: Use the @dag decorator to create a DAG that:
+# * Runs every minute
+# * Does not use catchup
 def data_quality_pipeline():
 
     CORRECT_PROB = 0.7
@@ -80,57 +76,17 @@ def data_quality_pipeline():
 
         print(f"Written to file: {booking_path}")
 
-    def get_anomalies_path(context):
-        execution_date = context["execution_date"]
-        file_date = execution_date.strftime("%Y-%m-%d_%H-%M")
-        return f"/tmp/data/anomalies/{file_date}/anomalies.json"
+    # TODO: Create a data quality check task that reads bookings data and validates every record.
+    # For every invalid record it should return a validation record that includes:
+    # * A record position in an input file
+    # * A list of identified violations
+    #
+    # Here is a list of validations it should perform:
+    # * Check if each of the fields is missing
+    # * Check if the "status" field has one of the valid values
+    #
+    # It should write all found anomalies into an input file.
 
-    @task
-    def quality_check():
-        context = get_current_context()
-        booking_path = get_bookings_path(context)
+    # TODO: Define dependencies between tasks
 
-        anomalies = []
-        valid_statuses = {"confirmed", "pending", "cancelled"}
-
-        with open(booking_path, "r") as f:
-            bookings = json.load(f)
-
-        for index, row in enumerate(bookings):
-            row_anomalies = []
-            if not row["booking_id"]:
-                row_anomalies.append("Missing booking_id")
-            if not row["listing_id"]:
-                row_anomalies.append("Missing listing_id")
-            if not row["user_id"]:
-                row_anomalies.append("Missing user_id")
-            if not row["booking_time"]:
-                row_anomalies.append("Missing booking_time")
-            if not row["status"]:
-                row_anomalies.append("Missing status")
-
-
-            if row["status"] not in valid_statuses:
-                row_anomalies.append(f"Invalid status: {row['status']}")
-
-            if row_anomalies:
-                anomalies.append({
-                    "booking_id": index,
-                    "anomalies": row_anomalies,
-                })
-
-        anomalies_file = get_anomalies_path(context)
-        directory = os.path.dirname(anomalies_file)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-
-
-        with open(anomalies_file, "w") as f:
-            json.dump(anomalies, f, indent=4)
-
-        print(f"Completed validation for {booking_path}. Anomalies found: {len(anomalies)}")
-        print(f"Result written to {anomalies_file}")
-
-    generate_bookings() >> quality_check()
-
-dag_instance = data_quality_pipeline()
+# TODO: Create an instance of the DAG
