@@ -7,15 +7,11 @@ from datetime import datetime, timedelta
 import os
 import csv
 
-default_args = {
-    "owner": "airflow",
-    "start_date": datetime(2023, 1, 1),
-}
 
 @dag(
-    'bookings_spark_pipeline',
-    default_args=default_args,
-    schedule_interval='* * * * *',
+    "bookings_spark_pipeline",
+    start_date=datetime(2025, 1, 1),
+    schedule_interval="* * * * *",
     catchup=False,
     description="",
 )

@@ -5,14 +5,10 @@ import os
 import json
 import random
 
-default_args = {
-    "owner": "airflow",
-    "start_date": datetime(2025, 1, 1),
-}
 
 @dag(
    "data_quality_pipeline",
-    default_args=default_args,
+    start_date=datetime(2025, 1, 1),
     schedule_interval='* * * * *',
     catchup=False,
     description="Data Quality Check DAG",
@@ -110,7 +106,7 @@ def data_quality_pipeline():
                 row_anomalies.append("Missing status")
 
 
-            if row["status"] not in valid_statuses:
+            if row["status"] and row["status"] not in valid_statuses:
                 row_anomalies.append(f"Invalid status: {row['status']}")
 
             if row_anomalies:
@@ -123,7 +119,6 @@ def data_quality_pipeline():
         directory = os.path.dirname(anomalies_file)
         if not os.path.exists(directory):
             os.makedirs(directory)
-
 
         with open(anomalies_file, "w") as f:
             json.dump(anomalies, f, indent=4)

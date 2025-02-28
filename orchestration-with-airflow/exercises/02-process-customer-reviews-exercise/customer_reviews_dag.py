@@ -1,4 +1,4 @@
-cfrom airflow.decorators import dag, task
+from airflow.decorators import dag, task
 from airflow.operators.python import get_current_context
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.apache.spark.operators.spark_submit import SparkSubmitOperator
@@ -6,14 +6,10 @@ from datetime import datetime, timedelta
 import os
 import csv
 
-default_args = {
-    "owner": "airflow",
-    "start_date": datetime(2023, 1, 1),
-}
 
 @dag(
-    'customer_reviews_dag',
-    default_args=default_args,
+    "customer_reviews_dag",
+    start_date=datetime(2025, 1, 1),
     schedule_interval="* * * * *",
     catchup=False,
     description="Review average score",

@@ -5,10 +5,6 @@ import os
 import json
 import random
 
-default_args = {
-    "owner": "airflow",
-    "start_date": datetime(2025, 1, 1),
-}
 
 # TODO: Use the @dag decorator to create a DAG that:
 # * Runs every minute
