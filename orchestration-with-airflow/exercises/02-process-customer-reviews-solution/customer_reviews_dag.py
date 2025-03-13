@@ -51,7 +51,7 @@ def customer_reviews_dag():
 
     spark_etl = SparkSubmitOperator(
         task_id="spark_etl_reviews",
-        application="spark_etl_reviews.py",
+        application="dags/spark_etl_reviews.py",
         name="guest_reviews_etl",
         application_args=[
             "--customer_reviews", "/tmp/data/customer_reviews/{{ execution_date.strftime('%Y%m%d_%H%M') }}/customer_reviews.csv",

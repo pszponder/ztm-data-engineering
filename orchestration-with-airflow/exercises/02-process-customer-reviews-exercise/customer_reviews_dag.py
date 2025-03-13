@@ -36,7 +36,7 @@ def customer_reviews_dag():
 
     spark_etl = SparkSubmitOperator(
         task_id="spark_etl_reviews",
-        application="spark_etl_reviews.py",
+        application="dags/spark_etl_reviews.py",
         name="guest_reviews_etl",
         application_args=[
             # TODO: Set input and output paths
