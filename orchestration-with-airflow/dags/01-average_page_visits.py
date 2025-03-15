@@ -18,7 +18,7 @@ def average_page_visits():
     def get_data_path():
         context = get_current_context()
         execution_date = context["execution_date"]
-        file_date = execution_date.strftime("%Y-%m-%d_%H")
+        file_date = execution_date.strftime("%Y-%m-%d_%H%M")
         return f"/tmp/page_visits/{file_date}.json"
 
     @task

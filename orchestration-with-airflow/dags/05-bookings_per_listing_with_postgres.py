@@ -26,7 +26,7 @@ def bookings_per_listing_with_sensor():
         file_path = f"/tmp/data/bookings/{file_date}/bookings.csv"
 
         start_of_minute = execution_date.replace(second=0, microsecond=0)
-        end_of_minute = start_of_minute + timedelta(hours=1)
+        end_of_minute = start_of_minute + timedelta(minutes=1)
 
         pg_hook = PostgresHook(postgres_conn_id="postgres_default")
         query = f"""
