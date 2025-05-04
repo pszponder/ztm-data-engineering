@@ -7,8 +7,7 @@
             "--reviews",
             "s3://ztm-data-engineering-bootcamp/reviews/date=2024-11/reviews.csv.gz",
             "--output",
-            "s3://ztm-data-engineering-bootcamp/reviews_per_listing/date=2024-11/reviews_per_listing.csv.gz"
-        ],
-        "sparkSubmitParameters": "--conf spark.executor.instances=2"
+            "s3://ztm-data-engineering-bootcamp/reviews_per_listing/date=2024-11"
+        ]
     }
 }
