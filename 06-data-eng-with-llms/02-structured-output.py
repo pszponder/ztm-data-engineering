@@ -3,11 +3,9 @@ from huggingface_hub import login
 # Log in to Hugging Face
 login(token="hf_...")
 
-import os
 import torch
 import json
 import outlines
-
 
 model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
@@ -32,7 +30,7 @@ schema = json.dumps({
 
 generate_json = outlines.generate.json(generator, schema)
 
-def classify_review(review: str) -> dict:
+def classify_review(review):
     """Return {"sentiment": "positive" | "negative"}"""
     prompt = (
         "Classify the following customer review as positive or negative.\n\n"

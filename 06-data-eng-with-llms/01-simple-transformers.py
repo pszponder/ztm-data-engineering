@@ -5,14 +5,14 @@ from huggingface_hub import login
 # Log in to Hugging Face
 login(token="hf_...")
 
-import os
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
 tokenizer = AutoTokenizer.from_pretrained(model_name)
-tokenizer.pad_token = tokenizer.eos_token
+tokenizer.pad_token = tokenizer.eos_token 
+tokenizer.pad_token_id = tokenizer.eos_token_id 
 
 model = AutoModelForCausalLM.from_pretrained(
     model_name,
@@ -20,15 +20,12 @@ model = AutoModelForCausalLM.from_pretrained(
     device_map="auto",
 ).to("cuda")
 
-model.config.pad_token_id = tokenizer.pad_token_id
-model.generation_config.pad_token_id = tokenizer.pad_token_id
 
-
-
+import textwrap
 
 def classify_review(review):
     prompt = f"""
-    Is the following customer review positive or negative. Write words "postive" or "negative":
+    Is the following customer review positive or negative? Write one word, "positive" or "negative".
 
     Review to classify:
 
@@ -37,16 +34,28 @@ def classify_review(review):
     ```
     """
 
-    inputs = tokenizer(prompt, return_tensors="pt").to(model.device)
+    print(textwrap.dedent(
+    f"""
+    Sending a prompt:
 
-    out_ids = model.generate(
+    -------------------------------------
+    {prompt}
+    -------------------------------------
+    """))
+
+    inputs = tokenizer(textwrap.dedent(prompt), return_tensors="pt").to(model.device)
+
+    output = model.generate(
         **inputs,
-        max_new_tokens=20
+        max_new_tokens=20,
+        pad_token_id=tokenizer.pad_token_id
     )
 
-    new_tokens = out_ids[0, inputs["input_ids"].shape[-1]:]
+    output_tokens = output[0]
+    new_tokens = output_tokens[inputs["input_ids"].shape[-1]:]
+    output_str = tokenizer.decode(new_tokens, skip_special_tokens=True)
 
-    return tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
+    return output_str
 
 
 print(classify_review("This is absolutely delightful!"))
