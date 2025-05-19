@@ -2,7 +2,6 @@
 
 from huggingface_hub import login
 
-# Log in to Hugging Face
 login(token="hf_...")
 
 import torch
@@ -23,8 +22,10 @@ import textwrap
 
 def classify_review(review: str) -> str:
     messages = [
-        {"role": "system", "content": "You are a sentiment classifier."},
-        {"role": "user",   "content": textwrap.dedent(f"""
+        {
+            "role": "user",
+            "content": textwrap.dedent(f"""
+                You are a sentiment classifier.
                 Is the following customer review positive or negative?
                 Respond with exactly one of the two words: positive, negative.
 
@@ -32,13 +33,13 @@ def classify_review(review: str) -> str:
                 ```
                 {review}
                 ```
-            """)}
+            """)
+        }
     ]
-    for message in messages:
-        print('----------------------------')
-        print(f"role: {message['role']}")
-        print(f"content: {message['content']}")
-        print('----------------------------')
+    
+    print('----------------------------')
+    print(f"{messages[0]['content']}")
+    print('----------------------------')
 
     output = generator(messages)
     generated_text = output[0]["generated_text"]

@@ -1,6 +1,5 @@
 from huggingface_hub import login
 
-# Log in to Hugging Face
 login(token="hf_...")
 
 import torch
@@ -31,7 +30,6 @@ schema = json.dumps({
 generate_json = outlines.generate.json(generator, schema)
 
 def classify_review(review):
-    """Return {"sentiment": "positive" | "negative"}"""
     prompt = (
         "Classify the following customer review as positive or negative.\n\n"
         f"Review:\n{review}\n"

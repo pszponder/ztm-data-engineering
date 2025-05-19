@@ -1,20 +1,10 @@
 %pip install transformers
 %pip install outlines
 
-import json
-import torch
-import outlines
-from functools import lru_cache
+
+# -----------------------
+
 from pyspark.sql import SparkSession
-from huggingface_hub import login
-
-# TODO: Try this: ----- 
-
-token = dbutils.secrets.get(scope="huggingface", key="hf_token")
-spark.conf.set("spark.driverEnv.HF_TOKEN", token)
-spark.conf.set("spark.executorEnv.HF_TOKEN", token)
-
-# -----
 
 spark = SparkSession.builder \
     .appName("HotelSentiment") \
@@ -23,8 +13,8 @@ spark = SparkSession.builder \
 
 spark
 
-# ---- ---- 
 
+# ------------------------
 
 reviews = [
     (1, "This is absolutely delightful!"),
@@ -39,8 +29,12 @@ df = spark.createDataFrame(
 )
 df.show()
 
+# ------------------------
 
-# ---- ----
+import outlines
+import json
+import torch
+from functools import lru_cache
 
 model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
@@ -55,15 +49,6 @@ schema = json.dumps({
     "required": ["sentiment"]
 })
 
-@lru_cache(maxsize=1)
-def get_classifier():
-    generator = outlines.models.transformers(
-        model_name,
-        device="cuda",
-        model_kwargs={"torch_dtype": torch.float16},
-    )
-    return outlines.generate.json(generator, schema)
-
 def classify(classifier, review):
     prompt = (
         "Classify the following customer review as positive or negative.\n\n"
@@ -72,12 +57,21 @@ def classify(classifier, review):
     output_json = classifier(prompt, max_tokens=40)
     return output_json['sentiment']
 
-# ---- ----
-
 from pyspark.sql.functions import pandas_udf
 
 @pandas_udf("string")
 def sentiment_udf(review_col):
+
+    @lru_cache(maxsize=1)
+    def get_classifier():
+        login(token="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")
+        generator = outlines.models.transformers(
+            model_name,
+            device="cuda",
+            model_kwargs={"torch_dtype": torch.float16},
+        )
+        return outlines.generate.json(generator, schema)
+    
     classifier = get_classifier()
 
     return review_col.apply(
