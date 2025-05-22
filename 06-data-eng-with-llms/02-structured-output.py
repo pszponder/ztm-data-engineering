@@ -1,3 +1,5 @@
+%pip install outlines
+
 from huggingface_hub import login
 
 login(token="hf_...")

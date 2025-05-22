@@ -20,7 +20,7 @@ generator = pipeline(
 
 import textwrap
 
-def classify_review(review: str) -> str:
+def classify_review(review):
     messages = [
         {
             "role": "user",

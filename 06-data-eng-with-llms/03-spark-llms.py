@@ -1,7 +1,6 @@
 %pip install transformers
 %pip install outlines
 
-
 # -----------------------
 
 from pyspark.sql import SparkSession
@@ -34,7 +33,6 @@ df.show()
 import outlines
 import json
 import torch
-from functools import lru_cache
 
 model_name = "mistralai/Mistral-7B-Instruct-v0.3"
 
@@ -57,14 +55,17 @@ def classify(classifier, review):
     output_json = classifier(prompt, max_tokens=40)
     return output_json['sentiment']
 
-from pyspark.sql.functions import pandas_udf
+# ------------------------------------------
 
-@pandas_udf("string")
-def sentiment_udf(review_col):
+from functools import lru_cache
+from pyspark.sql.functions import udf
+
+@udf("string")
+def sentiment_udf(review):
 
     @lru_cache(maxsize=1)
     def get_classifier():
-        login(token="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")
+        login(token="hf_...")
         generator = outlines.models.transformers(
             model_name,
             device="cuda",
@@ -74,9 +75,7 @@ def sentiment_udf(review_col):
     
     classifier = get_classifier()
 
-    return review_col.apply(
-        lambda review: classify(classifier, review)
-    )
+    return classify(classifier, review)
 
 
 result_df = df.withColumn("sentiment", sentiment_udf("review"))
