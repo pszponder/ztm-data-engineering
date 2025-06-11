@@ -1,6 +1,4 @@
-data/*csv.gz
-bin/
-etc/
-lib/
-pyvenv.cfg
-share/
+artifacts
+data
+venv
+.ipynb_checkpoints

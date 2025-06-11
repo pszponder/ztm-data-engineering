@@ -1,7 +1,3 @@
-.ipynb_checkpoints/
-bin/
-etc/
-include/
-lib/
-share/
-pyvenv.cfg
+data
+venv
+.ipynb_checkpoints

@@ -6,7 +6,7 @@
 from pyspark.sql import SparkSession
 
 spark = SparkSession.builder \
-    .appName("HotelSentiment") \
+    .appName("ReviewsClassifier") \
     .master("local[*]") \
     .getOrCreate()
 
@@ -47,24 +47,25 @@ schema = json.dumps({
     "required": ["sentiment"]
 })
 
-def classify(classifier, review):
+def classify(generate_json, review):
     prompt = (
         "Classify the following customer review as positive or negative.\n\n"
         f"Review:\n{review}\n"
     )
-    output_json = classifier(prompt, max_tokens=40)
+    output_json = generate_json(prompt, max_tokens=40)
     return output_json['sentiment']
 
 # ------------------------------------------
 
-from functools import lru_cache
 from pyspark.sql.functions import udf
+from functools import cache
+from huggingface_hub import login
 
 @udf("string")
 def sentiment_udf(review):
 
-    @lru_cache(maxsize=1)
-    def get_classifier():
+    @cache
+    def get_generate_json():
         login(token="hf_...")
         generator = outlines.models.transformers(
             model_name,
@@ -73,9 +74,9 @@ def sentiment_udf(review):
         )
         return outlines.generate.json(generator, schema)
     
-    classifier = get_classifier()
+    generate_json = get_generate_json()
 
-    return classify(classifier, review)
+    return classify(generate_json, review)
 
 
 result_df = df.withColumn("sentiment", sentiment_udf("review"))
