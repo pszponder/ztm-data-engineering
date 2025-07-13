@@ -54,9 +54,13 @@ You can try to run the following Spark code to verify everything is working:
 ```python
 from pyspark.sql import SparkSession
 
-spark = (SparkSession.builder
-         .appName("First Spark application")
-         .getOrCreate())
+# Initialize Spark Session (kind of like a client)
+spark = (
+    SparkSession.builder
+    .master("local[*]")  # Use all cores locally
+    .appName("My Local Spark App")
+    .getOrCreate()
+)
 
 data = [
     {"userId": 1, "paymentAmount": 100.0, "date": "2025-01-01"},
@@ -191,3 +195,105 @@ At this point, you're back to your global Python environment. You're now ready t
 Two modes of execution
 - **Cluster mode**: Multiple machines / prod environment
 - **Local mode**: Single machine for testing / development
+
+## Reading / Writing Data w/ Spark
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+################################################
+############ Create Spark Session ##############
+################################################
+
+spark = SparkSession.builder \
+    .master("local[*]") \
+    .appName("Fellowship of the Spark") \
+    .getOrCreate()
+
+################################################
+################# DEFINE SCHEMA ################
+################################################
+
+schema = StructType([
+    StructField("name", StringType(), nullable=False),
+    StructField("race", StringType(), nullable=False),
+    StructField("age", IntegerType(), nullable=False),
+    StructField("weapon", StringType(), nullable=True),
+])
+
+################################################
+################ READING DATA ##################
+################################################
+
+# Read from CSV
+csv_df = spark.read.csv(
+    'test.csv',
+    header=True,
+    schema=schema,
+    quote='"',
+    mode='PERMISSIVE'
+)
+
+# Read from multiple CSV files
+csv_multiple_df = spark.read.csv('test/*.csv', header=True)
+
+# Read from JSON
+json_df = spark.read.json('test.json')
+
+# Read from Parquet
+parquet_df = spark.read.parquet('test.parquet')
+
+################################################
+################# WRITING DATA #################
+################################################
+
+# Write CSV with header, overwrite if exists
+csv_df.write \
+    .mode("overwrite") \
+    .option("header", True) \
+    .csv("output/fellowship_csv")
+
+"""
+mode options:
+error      - Default: fail if exists
+overwrite  - Overwrite existing files
+append     - Add rows to existing dataset
+ignore     - Do nothing if output exists
+
+'overwrite' is useful in testing or pipelines
+where old output can be replaced.
+
+'append' is common in ETL jobs or streaming jobs
+that keep adding to logs/tables.
+
+'ignore' is handy in idempotent jobs
+where re-processing should not duplicate results.
+
+'error' is the safest default in production pipelines
+to avoid accidental data loss.
+"""
+
+# Write JSON
+csv_df.write \
+    .mode("overwrite") \
+    .json("output/fellowship_json")
+
+# Write Parquet
+csv_df.write \
+    .mode("overwrite") \
+    .parquet("output/fellowship_parquet")
+
+# Optional: write a single CSV file (coalesce to 1 partition)
+csv_df.coalesce(1).write \
+    .mode("overwrite") \
+    .option("header", True) \
+    .csv("output/fellowship_csv_single_file")
+
+################################################
+################# DONE #########################
+################################################
+
+# Stop SparkSession when done
+spark.stop()
+```
