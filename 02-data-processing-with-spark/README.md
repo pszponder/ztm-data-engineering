@@ -1,41 +1,31 @@
-# Install Spark
+# Pyspark
 
-To install Spark locally on macOS, run the following command:
+## Setup
+
+### Create a Virtual Environment
 
 ```sh
-brew install apache-spark
+uv venv
+```
+
+### Install Spark
+
+```sh
+uv add pyspark
 ```
 
 To check that it was installed correctly, you can run:
 
 ```sh
-pyspark --version
+uv run pyspark --version
 ```
 
----
+### Install Jupyter Lab
 
-# Create a Virtual Environment
-
-Create a virtual environment in a directory named `venv`:
+Run the following command to install Jupyter Lab:
 
 ```sh
-python -m venv venv
-```
-
-Activate the virtual environment:
-
-```sh
-source venv/bin/activate
-```
-
----
-
-# Install Jupyter Lab
-
-Run the following command inside the virtual environment to install Jupyter Lab:
-
-```sh
-pip install jupyter
+uv add jupyter
 ```
 
 Then configure PySpark to use Jupyter Lab as the driver:
@@ -45,14 +35,12 @@ export PYSPARK_DRIVER_PYTHON=jupyter
 export PYSPARK_DRIVER_PYTHON_OPTS='lab'
 ```
 
----
-
-# Start Jupyter Notebooks with Local PySpark
+## Start Jupyter Notebooks with Local PySpark
 
 Now you can start Jupyter Lab with PySpark:
 
 ```sh
-pyspark
+uv run pyspark
 ```
 
 This will open a Jupyter Lab interface in your browser where you can interact with Spark using notebooks.
@@ -109,3 +97,97 @@ When you're done working, follow these steps to shut everything down:
 At this point, you're back to your global Python environment. You're now ready to continue developing Spark applications!
 
 ---
+
+## What is Apache Spark?
+
+**Apache Spark** is a distributed data processing engine
+
+### When not to use Spark
+
+- Only need to process a small amount of data
+- Processing data in real-time (use Spark Streaming for this instead)
+
+### Spark Architecture
+
+- **Spark Cluster**
+    - A collection of distributed nodes that run Spark applications
+        - **Worker Nodes** — machines that run executors
+        - Nodes may also host **Driver** or **Cluster Manager**
+    - Contains a *Cluster Manager* (e.g. Standalone, YARN, K8s)
+    - Accepts 1 or more *Spark Applications* to run
+
+- **Spark Cluster Manager**
+    - Allocates resources across Spark applications
+    - Types: Spark Standalone, YARN, Kubernetes
+    - In Spark Standalone:
+        - A special node runs a **Master Process** (sometimes called a *Master Node*)
+        - The Master daemon manages the **Worker Processes**
+
+- **Spark Application**
+    - Reads one or more datasets, processes them, and writes one or more output datasets
+    - Submitted to a Spark Cluster
+    - When submitted:
+        - A **Driver process** is started (on a client machine or cluster node)
+        - The *Driver* requests **Executors** from the *Cluster Manager*
+        - The *Driver* orchestrates task execution on the *Executors*
+    - Each application has its own Driver and its own set of *Executors*
+
+- **Spark Driver (Process)**
+    - Runs user code and creates a DAG of transformations
+    - Requests *Executors* from the *Cluster Manager*
+    - Delegates tasks and coordinates results
+    - Lives for the duration of a Spark *application*
+
+- **Spark Worker Node**
+    - A physical machine in the Spark cluster
+    - Runs the **Worker Process**
+    - Hosts **Executor processes** for one or more applications
+
+- **Spark Worker Process**
+    - A daemon process running on a Worker Node
+    - Registers with the Cluster Manager
+    - Manages the launching and monitoring of **Executors** on its node
+
+- **Spark Executor**
+    - A JVM process launched by the Worker Process
+    - Runs on a Worker Node
+    - Performs tasks assigned by the Driver
+    - Caches data, performs shuffles, and returns results
+    - Is dedicated to one Spark Application only
+
+```txt
+                    +----------------------------+
+                    |      Cluster Manager       |
+                    |  (Standalone / YARN / K8s) |
+                    +-------------+--------------+
+                                  |
+                Registers workers & allocates resources
+                                  |
+                                  v
+               +--------------------------------------+
+               |          Spark Driver Process        |
+               |  (Runs main app code, builds DAG)    |
+               +------------------+-------------------+
+                                  |
+        ------------------------------------------------------
+        |                         |                          |
+        v                         v                          v
+
++-------------------+   +-------------------+    +-------------------+
+| Worker Node 1 |  | Worker Node 2 |  | Worker Node 3 |
+| ------------- ||-------------------|    |-------------------|
+| Worker Process    |   | Worker Process    |    | Worker Process    |
+| (Daemon) |  | (Daemon) |  | (Daemon) |
+| -------- ||-------------------|    |-------------------|
+| +---------------+ |   | +---------------+ |    | +---------------+ |
+| | Executor 1    | |   | | Executor 2    | |    | | Executor 3    | |
+| | (App-specific)| |   | | (App-specific)| |    | | (App-specific)| |
+| +---------------+ |   | +---------------+ |    | +---------------+ |
++-------------------+   +-------------------+    +-------------------+
+```
+
+### Spark Execution
+
+Two modes of execution
+- **Cluster mode**: Multiple machines / prod environment
+- **Local mode**: Single machine for testing / development
