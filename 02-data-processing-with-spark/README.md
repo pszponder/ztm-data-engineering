@@ -8,10 +8,10 @@
 uv venv
 ```
 
-### Install Spark
+### Install Spark and Jupyter
 
 ```sh
-uv add pyspark
+uv add pyspark jupyter
 ```
 
 To check that it was installed correctly, you can run:
@@ -20,34 +20,11 @@ To check that it was installed correctly, you can run:
 uv run pyspark --version
 ```
 
-### Install Jupyter Lab
+## Using VSCode w/ Spark + Jupyter Notebook
 
-Run the following command to install Jupyter Lab:
+When running a notebook in VSCode, make sure you have the .venv selected as the kernel
 
-```sh
-uv add jupyter
-```
-
-Then configure PySpark to use Jupyter Lab as the driver:
-
-```sh
-export PYSPARK_DRIVER_PYTHON=jupyter
-export PYSPARK_DRIVER_PYTHON_OPTS='lab'
-```
-
-## Start Jupyter Notebooks with Local PySpark
-
-Now you can start Jupyter Lab with PySpark:
-
-```sh
-uv run pyspark
-```
-
-This will open a Jupyter Lab interface in your browser where you can interact with Spark using notebooks.
-
----
-
-# Spark "Hello World"
+## Spark "Hello World"
 
 You can try to run the following Spark code to verify everything is working:
 
@@ -76,9 +53,7 @@ df.count()
 
 You should see the number of rows in the DataFrame as the output.
 
----
-
-# Clean Up
+## Clean Up
 
 When you're done working, follow these steps to shut everything down:
 
@@ -99,8 +74,6 @@ When you're done working, follow these steps to shut everything down:
     ```
 
 At this point, you're back to your global Python environment. You're now ready to continue developing Spark applications!
-
----
 
 ## What is Apache Spark?
 
@@ -291,9 +264,220 @@ csv_df.coalesce(1).write \
     .csv("output/fellowship_csv_single_file")
 
 ################################################
-################# DONE #########################
+################### DONE #######################
 ################################################
 
 # Stop SparkSession when done
 spark.stop()
 ```
+
+## Spark DataFrames
+
+A DataFrame...
+- Represents tabular data
+- Is immutable (all operations on a DataFrame return a new DataFrame)
+
+### How to create a DataFrame
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+# Create Spark session
+spark = SparkSession.builder.appName("SampleDF").getOrCreate()
+
+# Define sample data as list of tuples
+data = [
+    ("Frodo", "Hobbit", 50),
+    ("Aragorn", "Human", 87),
+    ("Legolas", "Elf", 2931)
+]
+
+# Define schema
+schema = StructType([
+    StructField("name", StringType(), True),
+    StructField("race", StringType(), True),
+    StructField("age", IntegerType(), True)
+])
+
+# Create DataFrame
+df = spark.createDataFrame(data, schema=schema)
+
+# Show the DataFrame
+df.show()
+```
+
+### Select Columns from a DataFrame
+
+```python
+# Select columns by passing in the column names as strings
+# Returns a new DataFrame w/ specified columns
+df_sample = df.select(
+    'col_a',
+    'col_b',
+    'col_c',
+    # ...
+    'col_N',
+)
+
+# Can also use the fields of the df
+df_sample2 = df.select(
+    df.col_a,
+    df.col_b,
+    df.col_c,
+    # ...
+    df.col_N,
+)
+```
+
+### Add a new column to a DataFrame
+
+```python
+# Add a new column to the dataset of the existing df
+df_new = df.withColumn('new_column', df.col_a * 100)
+```
+
+### Remove a column from a DataFrame
+
+```python
+df_dropped_col = df.dropColumn('col_name_to_drop')
+```
+
+### Filter / Where with DataFrames
+
+```python
+df_filtered = df.filter(
+    df.col_a == 50
+)
+
+# Can also pass in the condition as a string
+df_filtered2 = df.filter(
+    "col_a == 50 AND col_b > 10"
+)
+
+# where is an alias to the filter method
+df_filtered3 = df.where(
+    df.col_a == 50
+)
+```
+
+### Conditional Operations
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql import functions as F
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+
+# Step 1: Create Spark session
+spark = SparkSession.builder.appName("NoLitExample").getOrCreate()
+
+# Step 2: Define schema
+schema = StructType([
+    StructField("name", StringType(), nullable=False),
+    StructField("race", StringType(), nullable=False),
+    StructField("age", IntegerType(), nullable=False)
+])
+
+# Step 3: Sample data
+data = [
+    ("Frodo", "Hobbit", 50),
+    ("Gandalf", "Maia", 2019),
+    ("Legolas", "Elf", 2931),
+    ("Gimli", "Dwarf", 139),
+    ("Aragorn", "Human", 87),
+    ("Sauron", "Maia", 10000)
+]
+
+# Step 4: Create DataFrame
+df = spark.createDataFrame(data, schema=schema)
+
+# Step 5: Transformations using conditional operations
+df_transformed = df.select(
+    df.name,
+    df.race,
+    df.age,
+
+    # Column 1: is_immortal -> true if race is Elf or Maia
+    # Using .alias provides this new column with a name
+    F.when(df.race.isin("Elf", "Maia"), True)
+     .otherwise(False)
+     .alias("is_immortal"),
+
+    # Column 2: age_group -> classify based on age thresholds
+    F.when(df.age > 1000, "Ancient")
+     .when(df.age > 100, "Old")
+     .otherwise("Young")
+     .alias("age_group")
+)
+
+# Step 6: Show results
+df_transformed.show()
+```
+
+### Aggregating Data
+
+Aggregation refers to performing the following operations:
+- Counting
+- Summing
+- Averaging
+- Min/Max
+- Grouping data by one or more columns
+- etc.
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, count, avg, sum, min, max, mean
+
+# Start Spark session
+spark = SparkSession.builder.appName("Aggregation Example").getOrCreate()
+
+# Sample Data
+data = [
+    ("Aragorn", "Human", 87),
+    ("Legolas", "Elf", 2931),
+    ("Gimli", "Dwarf", 140),
+    ("Frodo", "Hobbit", 50),
+    ("Samwise", "Hobbit", 38),
+    ("Gandalf", "Maia", 2019)
+]
+
+# Create DataFrame
+df = spark.createDataFrame(data, ["name", "race", "age"])
+df.show()
+
+# Count all rows
+df.count()
+
+# Summary statistics
+df.describe().show()
+
+# Aggregate all numeric columns
+df.select(
+    count("*").alias("total_count"),
+    avg("age").alias("average_age"),
+    sum("age").alias("sum_age"),
+    min("age").alias("min_age"),
+    max("age").alias("max_age")
+).show()
+
+# Group by race and compute count and average age
+df.groupBy("race") \
+  .agg(
+      count("*").alias("count"),
+      avg("age").alias("avg_age"),
+      max("age").alias("max_age")
+  ).show()
+
+# Filtering after aggregation
+df.groupBy("race") \
+  .agg(avg("age").alias("avg_age")) \
+  .filter(col("avg_age") > 100) \
+  .show()
+
+# Multiple column GroupBy
+df.groupBy("race", "name") \
+  .agg(sum("age").alias("total_age")) \
+  .show()
+```
+
+### Joining Data
