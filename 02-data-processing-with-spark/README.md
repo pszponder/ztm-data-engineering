@@ -478,6 +478,322 @@ df.groupBy("race") \
 df.groupBy("race", "name") \
   .agg(sum("age").alias("total_age")) \
   .show()
+
+# Order by age descending
+df_ordered = df.orderBy(col("age").desc())
+
+# Use limit to limit the result set
+df_ordered_limited = df.orderBy(col("age").desc()).limit(3)
 ```
 
 ### Joining Data
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
+
+# Create Spark session
+spark = SparkSession.builder.appName("Join Examples").getOrCreate()
+
+# ================================
+# Characters DataFrame
+# ================================
+characters_data = [
+    ("Aragorn", "Human"),
+    ("Legolas", "Elf"),
+    ("Gimli", "Dwarf"),
+    ("Frodo", "Hobbit"),
+    ("Gandalf", "Maia")
+]
+characters_df = spark.createDataFrame(characters_data, ["name", "race"])
+
+# ================================
+# Weapons DataFrame
+# Note: Boromir is not in characters_df
+# ================================
+weapons_data = [
+    ("Aragorn", "And�ril"),
+    ("Legolas", "Bow"),
+    ("Gimli", "Axe"),
+    ("Frodo", "Sting"),
+    ("Boromir", "Sword")
+]
+weapons_df = spark.createDataFrame(weapons_data, ["name", "weapon"])
+
+# ======================================
+# INNER JOIN (only matching rows)
+# ======================================
+print("\n=== INNER JOIN ===")
+characters_df.join(weapons_df, on="name", how="inner").show()
+
+# ======================================
+# LEFT JOIN (all characters, even if no weapon)
+# ======================================
+print("\n=== LEFT JOIN ===")
+characters_df.join(weapons_df, on="name", how="left").show()
+
+# ======================================
+# RIGHT JOIN (all weapons, even if no character)
+# ======================================
+print("\n=== RIGHT JOIN ===")
+characters_df.join(weapons_df, on="name", how="right").show()
+
+# ======================================
+# FULL OUTER JOIN (all from both sides)
+# ======================================
+print("\n=== FULL OUTER JOIN ===")
+characters_df.join(weapons_df, on="name", how="outer").show()
+
+# ======================================
+# LEFT SEMI JOIN (only matching characters, returns only columns from left side)
+# Think of it like filtering characters_df where a match exists in weapons_df
+# ======================================
+print("\n=== LEFT SEMI JOIN ===")
+characters_df.join(weapons_df, on="name", how="left_semi").show()
+
+# ======================================
+# LEFT ANTI JOIN (only characters with no match in weapons_df)
+# ======================================
+print("\n=== LEFT ANTI JOIN ===")
+characters_df.join(weapons_df, on="name", how="left_anti").show()
+
+# ======================================
+# JOIN ON MULTIPLE COLUMNS (example)
+# Create a second characters_df to simulate a more strict match
+# ======================================
+characters_extended_data = [
+    ("Aragorn", "Human"),
+    ("Aragorn", "Elf"),      # Mismatched race
+    ("Frodo", "Hobbit"),
+    ("Gimli", "Dwarf")
+]
+characters_ext_df = spark.createDataFrame(characters_extended_data, ["name", "race"])
+
+print("\n=== JOIN ON MULTIPLE COLUMNS ===")
+characters_ext_df.join(characters_df, on=["name", "race"], how="inner").show()
+
+# Stop the Spark session when done
+spark.stop()
+```
+
+## Working w/ JSON
+
+```json
+[
+  {
+    "name": "Frodo",
+    "race": "Hobbit",
+    "age": 50,
+    "titles": [
+      "Ring-bearer"
+    ],
+    "attributes": {
+      "courage": "high",
+      "stealth": "medium"
+    },
+    "equipment": {
+      "weapon": "Sting",
+      "armor": {
+        "type": "mithril",
+        "weight": "light"
+      }
+    }
+  },
+  {
+    "name": "Samwise",
+    "race": "Hobbit",
+    "age": 38,
+    "titles": [
+      "Gardener",
+      "Companion"
+    ],
+    "attributes": {
+      "loyalty": "high"
+    },
+    "equipment": {
+      "weapon": "sword",
+      "armor": {
+        "type": "leather",
+        "weight": "light"
+      }
+    }
+  },
+  {
+    "name": "Aragorn",
+    "race": "Human",
+    "age": 87,
+    "titles": [
+      "Strider",
+      "King"
+    ],
+    "attributes": {
+      "leadership": "high",
+      "tracking": "high"
+    },
+    "equipment": {
+      "weapon": "Andúril",
+      "armor": {
+        "type": "plate",
+        "weight": "medium"
+      }
+    }
+  },
+  {
+    "name": "Legolas",
+    "race": "Elf",
+    "age": 2931,
+    "titles": [
+      "Prince",
+      "Archer"
+    ],
+    "attributes": {
+      "vision": "excellent",
+      "agility": "high"
+    },
+    "equipment": {
+      "weapon": "bow",
+      "armor": {
+        "type": "leather",
+        "weight": "light"
+      }
+    }
+  },
+  {
+    "name": "Gimli",
+    "race": "Dwarf",
+    "age": 140,
+    "titles": [
+      "Warrior"
+    ],
+    "attributes": {
+      "strength": "high",
+      "stamina": "high"
+    },
+    "equipment": {
+      "weapon": "axe",
+      "armor": {
+        "type": "chainmail",
+        "weight": "heavy"
+      }
+    }
+  },
+  {
+    "name": "Gandalf",
+    "race": "Maia",
+    "age": 2019,
+    "titles": [
+      "The Grey",
+      "The White"
+    ],
+    "attributes": {
+      "magic": "true",
+      "wisdom": "very high"
+    },
+    "equipment": {
+      "weapon": "staff",
+      "armor": {
+        "type": "robe",
+        "weight": "light"
+      }
+    }
+  }
+]
+
+```
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, explode
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, ArrayType, MapType
+
+# ========================================
+# 1. Start Spark Session
+# ========================================
+spark = SparkSession.builder.appName("PySpark JSON Handling").getOrCreate()
+
+# ========================================
+# 2. Define JSON Schema (optional but recommended)
+#    Helps Spark parse complex structures like arrays and maps
+# ========================================
+schema = StructType([
+    StructField("name", StringType(), nullable=False),
+    StructField("race", StringType(), nullable=True),
+    StructField("age", IntegerType(), nullable=True),
+    StructField("titles", ArrayType(StringType()), nullable=True),           # Array of strings
+    StructField("attributes", MapType(StringType(), StringType()), True),    # Dictionary-like structure
+    StructField("equipment", StructType([                                    # Nested struct
+        StructField("weapon", StringType(), True),
+        StructField("armor", StructType([
+            StructField("type", StringType(), True),
+            StructField("weight", StringType(), True),
+        ]), True),
+    ]), True)
+])
+
+# ========================================
+# 3. Read JSON file using the defined schema
+#    The file should be in JSON Lines format (one JSON object per line)
+# ========================================
+df = spark.read.option("multiLine", True).schema(schema).json("characters.json")
+
+# Show the inferred schema and preview data
+df.printSchema()
+df.show(truncate=False)
+
+# ========================================
+# 4. Select basic fields
+# ========================================
+df.select("name", "race", "age").show()
+
+# ========================================
+# 5. Access array elements: Get first title
+# ========================================
+df.select(
+    col("name"),
+    col("titles")[0].alias("main_title")  # Access first element in titles array
+).show()
+
+# ========================================
+# 6. Access map values (dictionaries): Get value for a key
+# ========================================
+df.select(
+    col("name"),
+    col("attributes")["magic"].alias("has_magic")
+).show()
+
+# ========================================
+# 7. Explode array: Convert titles array into multiple rows
+# ========================================
+df.select(
+    col("name"),
+    explode("titles").alias("title")
+).show()
+
+# ========================================
+# 8. Access deeply nested fields
+# ========================================
+df.select(
+    col("name"),
+    col("equipment.weapon").alias("weapon"),
+    col("equipment.armor.type").alias("armor_type"),
+    col("equipment.armor.weight").alias("armor_weight")
+).show()
+
+# ========================================
+# 9. Write the DataFrame back to disk as JSON Lines
+#    This will create a folder with multiple JSON files (one per partition)
+# ========================================
+df.write.mode("overwrite").json("output_path")
+
+# Optional: Write pretty-printed JSON (not suitable for large data)
+# ----------------------------------------
+# import json
+# with open("output_pretty.json", "w") as f:
+#     for row in df.collect():
+#         f.write(json.dumps(row.asDict(), indent=2))
+
+# ========================================
+# 10. Stop Spark Session
+# ========================================
+spark.stop()
+```
