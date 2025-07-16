@@ -576,7 +576,7 @@ characters_ext_df.join(characters_df, on=["name", "race"], how="inner").show()
 spark.stop()
 ```
 
-## Working w/ JSON
+### Working w/ JSON
 
 ```json
 [
@@ -698,7 +698,6 @@ spark.stop()
     }
   }
 ]
-
 ```
 
 ```python
@@ -794,6 +793,67 @@ df.write.mode("overwrite").json("output_path")
 
 # ========================================
 # 10. Stop Spark Session
+# ========================================
+spark.stop()
+```
+
+## User Defined Functions
+
+A **UDF** (User Defined Function) allows you to write custom logic in Python and apply it to DataFrame columns.
+
+```python
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import udf, pandas_udf
+from pyspark.sql.types import StringType, BooleanType
+import pandas as pd
+
+# ========================================
+# 1. Start Spark Session
+# ========================================
+spark = SparkSession.builder.appName("UDF Decorator Example").getOrCreate()
+
+# ========================================
+# 2. Sample DataFrame
+# ========================================
+data = [
+    ("Frodo", "Hobbit", 50),
+    ("Gimli", "Dwarf", 140),
+    ("Aragorn", "Human", 87),
+    ("Legolas", "Elf", 2931),
+    ("Gandalf", "Maia", 2019)
+]
+df = spark.createDataFrame(data, ["name", "race", "age"])
+
+# ========================================
+# 3. Use @udf decorator to define scalar UDF
+#    Classifies age into categories
+# ========================================
+@udf(returnType=StringType())
+def classify_age(age):
+    if age > 1000:
+        return "Ancient"
+    elif age > 100:
+        return "Old"
+    else:
+        return "Young"
+
+# Apply UDF to create a new column
+df_with_category = df.withColumn("age_category", classify_age("age"))
+df_with_category.show()
+
+# ========================================
+# 4. @udf with multiple inputs
+#    Returns True if race is "Elf" and age > 1000
+# ========================================
+@udf(returnType=BooleanType())
+def is_elven_and_ancient(race, age):
+    return race == "Elf" and age > 1000
+
+df_with_flag = df.withColumn("is_elven_ancient", is_elven_and_ancient("race", "age"))
+df_with_flag.show()
+
+# ========================================
+# 5. Stop Spark Session
 # ========================================
 spark.stop()
 ```
